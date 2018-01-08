@@ -24,6 +24,7 @@ MuseScore {
     Melodic_Aug_Or_Dim: true, // DONE
     Melodic_Seventh: true, // DONE
     Offbeat: false, // no offbeats, ie first species - DONE
+    Doubled_LT: true,
     Cadence_raised_LT: true,
     Cadence_LT_Resolution: true,
     Cadence_V7_Resolution: true,
@@ -58,8 +59,9 @@ MuseScore {
     Melodic_Aug_Or_Dim: "mel",
     Melodic_Seventh: "mel7",
     Offbeat: "x", // no offbeats, ie first species
+    Doubled_LT: "2xlt",
     Cadence_raised_LT: "LT!",
-    Cadence_LT_Resolution: "LT",
+    Cadence_LT_Resolution: "lt",
     Cadence_V7_Resolution: "7th",
     Repeated_Note: "rpt", // strict species forbids repeated notes in 2-4 species
     Passing_Tone: "PT",
@@ -380,6 +382,13 @@ MuseScore {
           if (dyads[index].voiceCross()) {
             error.annotate(errorMessage.Voice_Crossing, 0);
             errorDetails.text += "Measure " + measure + ": Melody crosses bass\n";
+          }
+        }
+
+        if (counterpointRestrictions.Doubled_LT) {
+          if (dyads[index].topNote.sd == 7 && dyads[index].botNote.sd == 7) {
+            error.annotate(errorMessage.Doubled_LT, 0);
+            errorDetails.text += "Measure " + measure + ": Doubled Leading Tone\n";
           }
         }
 
