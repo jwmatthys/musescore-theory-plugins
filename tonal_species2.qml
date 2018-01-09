@@ -3,17 +3,17 @@ import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Counterpoint.Check All Errors"
+  menuPath: "Plugins.Counterpoint.Tonal Species 2"
   description: "Check for Errors in Tonal Counterpoint Writing"
-  version: "0.3"
+  version: "0.4"
 
   property
-  var mode: "Major";
+  var mode: "MajorMinor";
   property
   var counterpointRestrictions: Object.freeze({
     Show_Intervals: true, // can be turned off if you want your students to figure these out themselves
     Dissonant_Downbeats: true, // true means that these things will be checked, ie errors - DONE
-    Dissonant_Offbeats: true,
+    Dissonant_Offbeats: true, // DONE
     Voice_Crossing: true, // DONE
     Accidentals: true, // will still allow raised 6 and raised 7 in minor - DONE
     Melodic_Perfect_Parallels: true, // DONE
@@ -30,22 +30,24 @@ MuseScore {
     Cadence_raised_LT: true, // DONE
     Cadence_LT_Resolution: true, // DONE
     V7_Resolution: true, // DONE
-    Repeated_Note_Over_Barline: false, // strict species forbids this in spec 2 & 3 but not 4 - DONE
+    Repeated_Note_Over_Barline: true, // strict species forbids this in spec 2 & 3 but not 4 - DONE
     Repeated_Offbeat: true, // This is usually true - DONE
-    Passing_Tone: true, // true will restrict (forbid) passing tones - don't know why you want that but... - DONE
-    Neighbor_Tone: true, // true will restrict neighbor tones - this should be true for species 2 - DONE
-    Allow_Appoggiatura: true, // DONE
-    Allow_Retardation: true, // DONE
-    Allow_Suspension: true, // DONE
+    Allow_Passing_Tone: true, // DONE
+    Allow_Neighbor_Tone: false, // DONE
+    Allow_Appoggiatura: false, // DONE
+    Allow_Retardation: false, // DONE
+    Allow_Suspension: false, // DONE
+    Allow_Accented_Passing_Tone: false, // for species 4
+    Allow_Accented_Neighbor: false, // for species 4
     Nota_Cambiata: false, // DONE
-    Double_Neighbor: true, // the more general version of nota combiata that can move up or down - DONE
-    Escape_Tone: true, // overrides Leap_From_Dissonance DONE
+    Double_Neighbor: false, // the more general version of nota combiata that can move up or down - DONE
+    Escape_Tone: false, // overrides Leap_From_Dissonance DONE
     Step_Back_After_Leap: true, // warns if leap of 6th or octave doesn't step back the opposite direction - DONE
     Max_Perfect: 50, // percent; warn if too many perfect intervals - DONE
     Max_Leaps: 50, // percent; warn if too many leaps - DONE
     Max_Consecutive_36: 4, // maximum number of consecutive 3rds or 6ths - DONE
     Max_Consecutive_Leaps: 4, // DONE
-    Min_Std_Dev: 0 // experimental: measure of how much melody - DONE, but what is the threshold??
+    Min_Std_Dev: 2 // experimental: measure of how much melody - DONE, but what is the threshold??
   });
 
   property
@@ -70,11 +72,13 @@ MuseScore {
     V7_Resolution: "7th",
     Repeated_Note_Over_Barline: "rep", // strict species forbids this in spec 2 & 3 but not 4
     Repeated_Offbeat: "rep", // This is usually true
-    Passing_Tone: "PT",
-    Neighbor_Tone: "NT",
+    Allow_Passing_Tone: "PT",
+    Allow_Neighbor_Tone: "NT",
     Allow_Appoggiatura: "APP",
     Allow_Retardation: "RET",
     Allow_Suspension: "SUS",
+    Allow_Accented_Passing_Tone: "APT", // for species 4
+    Allow_Accented_Neighbor: "AN", // for species 4
     Nota_Cambiata: "NC",
     Double_Neighbor: "DN", // the more general version of nota combiata that can move up or down
     Escape_Tone: "ET", // overrides Leap_From_Dissonance
@@ -240,6 +244,7 @@ MuseScore {
     }
 
     this.isPerfect = function() {
+      if (this.size == 4) return false; // P4 is actually a dissonance
       return (intervalQual.PERFECT == this.quality);
     }
 
@@ -314,8 +319,8 @@ MuseScore {
     this.isDissonant = function() {
       if (this.permittedDissonance) return false;
       if (this.nct) return true;
-      if (this.interval.quality == intervalQual.DIM) return true;
-      if (this.interval.quality == intervalQual.AUGMENTED) return true;
+      //if (this.interval.quality == intervalQual.DIM) return true;
+      //if (this.interval.quality == intervalQual.AUGMENTED) return true;
       if (this.interval.quality == intervalQual.OTHER) return true;
       return false;
     }
@@ -361,6 +366,7 @@ MuseScore {
   function stepsBackAfterBigLeap(note1, note2, note3) {
     var int1 = new cInterval(note1, note2);
     if (int1.size == 6 || int1.size == 8) {
+      if (note1.pitch - note2.pitch == 0) return true;
       if ((note1.pitch - note2.pitch) * (note2.pitch - note3.pitch) > 0) return false; // direction check
       var int2 = new cInterval(note2, note3);
       if (int2.direction == 0) return true;
@@ -408,7 +414,7 @@ MuseScore {
     var cursor = curScore.newCursor();
     cursor.rewind(0);
     key = cursor.keySignature + 14;
-    if (mode == "Minor") key += 3;
+    if (mode == "MajorMinor") key += 3;
     var segment = cursor.segment;
 
     // Process all dyads and mark intervals
@@ -431,7 +437,7 @@ MuseScore {
           var text = newElement(Element.STAFF_TEXT);
           text.pos.y = 10;
           text.text = dyads[index].interval.toString();
-          if (dyads[index].interval.quality == intervalQual.PERFECT) text.color = colorPerf;
+          if (dyads[index].interval.isPerfect()) text.color = colorPerf;
           if (dyads[index].nct) text.color = colorNCT;
           cursor.add(text);
         }
@@ -454,21 +460,39 @@ MuseScore {
           }
         }
 
-        if (index > 0 && index < (dyads.length - 1)) // Let's go after those triples (PT, NT, app, ret)
+        if (index > 0 && index < (dyads.length - 1)) // Let's go after those triples (PT, NT, app, ret, sus, apt)
         {
-          if (counterpointRestrictions.Passing_Tone) {
+          if (counterpointRestrictions.Allow_Passing_Tone) {
             if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
               if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
-                error.annotate(errorMessage.Passing_Tone, colorCT);
+                error.annotate(errorMessage.Allow_Passing_Tone, colorCT);
                 dyads[index].permittedDissonance = true;
               }
             }
           }
 
-          if (counterpointRestrictions.Neighbor_Tone) {
+          if (counterpointRestrictions.Allow_Accented_Passing_Tone) {
+            if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
+              if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
+                error.annotate(errorMessage.Allow_Accented_Passing_Tone, colorCT);
+                dyads[index].permittedDissonance = true;
+              }
+            }
+          }
+
+          if (counterpointRestrictions.Allow_Neighbor_Tone) {
             if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
               if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
-                error.annotate(errorMessage.Neighbor_Tone, colorCT);
+                error.annotate(errorMessage.Allow_Neighbor_Tone, colorCT);
+                dyads[index].permittedDissonance = true;
+              }
+            }
+          }
+
+          if (counterpointRestrictions.Allow_Accented_Neighbor) {
+            if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
+              if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
+                error.annotate(errorMessage.Allow_Accented_Neighbor, colorCT);
                 dyads[index].permittedDissonance = true;
               }
             }
@@ -522,7 +546,7 @@ MuseScore {
         if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Appoggiatura) {
           var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
           var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (melodicInterval.direction > 0 && melodicInterval.size > 2 && dyads[index].newBot &&
+          if (melodicInterval.direction > 0 && melodicInterval.size > 2 && dyads[index].newBot && dyads[index].nct &&
             melodicInterval2.direction < 0 && melodicInterval2.size == 2 && !dyads[index + 1].nct) {
             error.annotate(errorMessage.Allow_Appoggiatura, colorCT);
             dyads[index].permittedDissonance = true;
@@ -582,7 +606,7 @@ MuseScore {
 
         if (counterpointRestrictions.Accidentals) {
           if (dyads[index].topNote.accidental) {
-            if (mode != "Minor") {
+            if (mode != "MajorMinor") {
               error.annotate(errorMessage.Accidentals, colorError);
               errorDetails.text += "Measure " + dyads[index].measure + ": Accidentals are restricted in this species\n";
               dyads[index].topNote.accidental.color = "#ff0000";
@@ -599,8 +623,8 @@ MuseScore {
         if (counterpointRestrictions.Consecutive_Downbeat_Parallels) {
           if (dyads[index].newBot) {
             if (index - prevDownbeat > 1 &&
-              dyads[prevDownbeat].interval.quality == intervalQual.PERFECT &&
-              dyads[index].interval.quality == intervalQual.PERFECT &&
+              dyads[prevDownbeat].interval.isPerfect() &&
+              dyads[index].interval.isPerfect() &&
               dyads[prevDownbeat].interval.size == dyads[index].interval.size &&
               motion(dyads[prevDownbeat], dyads[index]) == tonalMotion.SIMILAR) {
               error.annotate(errorMessage.Consecutive_Downbeat_Parallels + dyads[index].interval.toString(), colorError);
@@ -632,8 +656,8 @@ MuseScore {
           }
         }
         if (counterpointRestrictions.Melodic_Perfect_Parallels) {
-          if (dyads[index].interval.quality == intervalQual.PERFECT &&
-            dyads[index - 1].interval.quality == intervalQual.PERFECT &&
+          if (dyads[index].interval.isPerfect() &&
+            dyads[index - 1].interval.isPerfect() &&
             dyads[index].interval.size == dyads[index - 1].interval.size &&
             motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
             error.annotate(errorMessage.Melodic_Perfect_Parallels + dyads[index].interval.toString(), colorError);
@@ -650,8 +674,8 @@ MuseScore {
           }
         }
         if (counterpointRestrictions.Hidden_Parallels) {
-          if (dyads[index].newBot && dyads[index].interval.quality == intervalQual.PERFECT &&
-            dyads[index - 1].interval.quality == intervalQual.PERFECT &&
+          if (dyads[index].newBot && dyads[index].interval.isPerfect() &&
+            dyads[index - 1].interval.isPerfect() &&
             dyads[index].interval.size == dyads[index - 1].interval.size &&
             motion(dyads[index], dyads[index - 1]) == tonalMotion.CONTRARY) {
             error.annotate(errorMessage.Hidden_Parallels + dyads[index].interval.toString(), colorError);
@@ -659,7 +683,7 @@ MuseScore {
           }
         }
         if (counterpointRestrictions.Leap_To_Similar_Perfect) {
-          if (dyads[index].interval.quality == intervalQual.PERFECT) {
+          if (dyads[index].interval.isPerfect()) {
             var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
             if (motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR &&
               melodicInterval.size > 2) {
@@ -721,7 +745,7 @@ MuseScore {
         }
 
         if (counterpointRestrictions.Cadence_raised_LT && index <= dyads.length - 2 &&
-          dyads[index].isVchord() && dyads[index + 1].isIchord() && mode == "Minor" &&
+          dyads[index].isVchord() && dyads[index + 1].isIchord() && mode == "MajorMinor" &&
           dyads[index].topNote.sd == 7 && !dyads[index].topNote.accidental) {
           error.annotate(errorMessage.Cadence_raised_LT, colorError);
           errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone needs to be raised at cadence\n";
@@ -759,7 +783,7 @@ MuseScore {
     var pitchMean;
     var numNotes = 0;
     for (index = 0; index < dyads.length; index++) {
-      if (dyads[index].interval.quality == intervalQual.PERFECT) perfectCount++;
+      if (dyads[index].interval == intervalQual.PERFECT) perfectCount++;
       if (dyads[index].topNote) {
         pitchSum += dyads[index].topNote.pitch;
         numNotes++;
@@ -785,7 +809,9 @@ MuseScore {
     if (perfectCount * 100.0 / dyads.length > counterpointRestrictions.Max_Perfect) {
       errorDetails.text = errorDetails.text + "Melody has more than " + counterpointRestrictions.Max_Perfect + "% perfect intervals\n";
     }
-    errorDetails.text = errorDetails.text + "Melody has standard deviation of " + pitchDeviation;
+    if (pitchDeviation < counterpointRestrictions.Min_Std_Dev) {
+      errorDetails.text = errorDetails.text + "Melody should have larger range";
+    }
     errorDetails.visible = true;
     Qt.quit();
   }
