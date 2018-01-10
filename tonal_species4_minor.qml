@@ -3,7 +3,7 @@ import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Counterpoint.Species 4 Minor"
+  menuPath: "Plugins.Proof Reading.Counterpoint.Tonal.Species 4 Minor"
   description: "Check for Errors in Tonal Counterpoint Writing"
   version: "0.41"
 
