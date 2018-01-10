@@ -45,11 +45,13 @@ x      Forbidden offbeat notes in first species
 
 ## Other warning messages
 
+```
 Too many consecutive 3rds or 6ths (up to 4 before warning)
 Too many consecutive leaps (up to 4 before warning)
 Too many perfect interval (up to 50% before warning)
 Too many leaps (up to 50% before warning)
 Melody should have larger range (experimental warning – uses standard deviation of melody)
+```
 
 ## Limitations
 
