@@ -3,12 +3,12 @@ import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Proof Reading.Counterpoint.Tonal.Species 2 Minor"
+  menuPath: "Plugins.Proof Reading.Counterpoint.Tonal.Species 5 Major"
   description: "Check for Errors in Tonal Counterpoint Writing"
   version: "0.5"
 
   property
-  var mode: "Minor";
+  var mode: "Major";
   property
   var counterpointRestrictions: Object.freeze({
     Show_Intervals: true, // can be turned off if you want your students to figure these out themselves
@@ -30,18 +30,18 @@ MuseScore {
     Cadence_raised_LT: true, // DONE
     Cadence_LT_Resolution: true, // DONE
     V7_Resolution: true, // DONE
-    Repeated_Note_Over_Barline: true, // strict species forbids this in spec 2 & 3 but not 4 - DONE
-    Repeated_Offbeat: true, // This is usually true - DONE
+    Repeated_Note_Over_Barline: false, // strict species forbids this in spec 2 & 3 but not 4 - DONE
+    Repeated_Offbeat: false, // This is usually true - DONE
     Allow_Passing_Tone: true, // DONE
-    Allow_Neighbor_Tone: false, // DONE
-    Allow_Appoggiatura: false, // DONE
-    Allow_Retardation: false, // DONE
-    Allow_Suspension: false, // DONE
-    Allow_Accented_Passing_Tone: false, // for species 4
-    Allow_Accented_Neighbor: false, // for species 4
-    Nota_Cambiata: false, // DONE
-    Double_Neighbor: false, // the more general version of nota combiata that can move up or down - DONE
-    Escape_Tone: false, // overrides Leap_From_Dissonance DONE
+    Allow_Neighbor_Tone: true, // DONE
+    Allow_Appoggiatura: true, // DONE
+    Allow_Retardation: true, // DONE
+    Allow_Suspension: true, // DONE
+    Allow_Accented_Passing_Tone: true, // for species 4
+    Allow_Accented_Neighbor: true, // for species 4
+    Nota_Cambiata: true, // DONE
+    Double_Neighbor: true, // the more general version of nota combiata that can move up or down - DONE
+    Escape_Tone: true, // overrides Leap_From_Dissonance DONE
     Step_Back_After_Leap: true, // warns if leap of 6th or octave doesn't step back the opposite direction - DONE
     Max_Perfect: 50, // percent; warn if too many perfect intervals - DONE
     Max_Leaps: 50, // percent; warn if too many leaps - DONE

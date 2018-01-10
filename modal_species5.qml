@@ -32,7 +32,7 @@ MuseScore {
     Cadence_LT_Resolution: false, // DONE
     V7_Resolution: false, // DONE
     Repeated_Note_Over_Barline: false, // strict species forbids this in spec 2 & 3 but not 4 - DONE
-    Repeated_Offbeat: true, // This is usually true - DONE
+    Repeated_Offbeat: false, // This is usually true - DONE
     Allow_Passing_Tone: true, // DONE
     Allow_Neighbor_Tone: true, // DONE
     Allow_Appoggiatura: false, // DONE
@@ -131,7 +131,7 @@ MuseScore {
 
   MessageDialog {
     id: errorDetails
-    title: "First Species Tonal Counterpoint Errors"
+    title: "Counterpoint Proof Reading Messages"
     text: ""
     onAccepted: {
       Qt.quit();
@@ -557,7 +557,7 @@ MuseScore {
               if (counterpointRestrictions.Allow_Suspension && index > 0 && index < dyads.length - 2) {
                 var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
                 if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
-                  !dyads[index - 1].nct && !dyads[index + 1].nct &&
+                  !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
                   dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
                   ((melodicInterval2.direction < 0) || (melodicInterval2.direction > 0 && melodicInterval2.quality == intervalQual.MINOR))) {
                   error.annotate(errorMessage.Allow_Suspension, colorCT);
