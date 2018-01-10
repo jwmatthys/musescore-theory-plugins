@@ -3,17 +3,17 @@ import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Counterpoint.Tonal Species 1"
+  menuPath: "Plugins.Counterpoint.Species 2 Major"
   description: "Check for Errors in Tonal Counterpoint Writing"
-  version: "0.4"
+  version: "0.41"
 
   property
-  var mode: "MajorMinor";
+  var mode: "Major";
   property
   var counterpointRestrictions: Object.freeze({
     Show_Intervals: true, // can be turned off if you want your students to figure these out themselves
     Dissonant_Downbeats: true, // true means that these things will be checked, ie errors - DONE
-    Dissonant_Offbeats: false, // why bother
+    Dissonant_Offbeats: true, // DONE
     Voice_Crossing: true, // DONE
     Accidentals: true, // will still allow raised 6 and raised 7 in minor - DONE
     Melodic_Perfect_Parallels: true, // DONE
@@ -25,14 +25,14 @@ MuseScore {
     Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Retardation - DONE
     Melodic_Aug_Or_Dim: true, // DONE
     Melodic_Seventh: true, // DONE
-    Offbeat: true, // no offbeats, ie first species - DONE
+    Offbeat: false, // no offbeats, ie first species - DONE
     Doubled_LT: true, // DONE
     Cadence_raised_LT: true, // DONE
     Cadence_LT_Resolution: true, // DONE
     V7_Resolution: true, // DONE
-    Repeated_Note_Over_Barline: false, // strict species forbids this in spec 2 & 3 but not 4 - DONE
-    Repeated_Offbeat: false, // This is usually true - DONE
-    Allow_Passing_Tone: false, // DONE
+    Repeated_Note_Over_Barline: true, // strict species forbids this in spec 2 & 3 but not 4 - DONE
+    Repeated_Offbeat: true, // This is usually true - DONE
+    Allow_Passing_Tone: true, // DONE
     Allow_Neighbor_Tone: false, // DONE
     Allow_Appoggiatura: false, // DONE
     Allow_Retardation: false, // DONE
@@ -47,7 +47,7 @@ MuseScore {
     Max_Leaps: 50, // percent; warn if too many leaps - DONE
     Max_Consecutive_36: 4, // maximum number of consecutive 3rds or 6ths - DONE
     Max_Consecutive_Leaps: 4, // DONE
-    Min_Std_Dev: 1 // experimental: measure of how much melody - DONE, but what is the threshold??
+    Min_Std_Dev: 2 // experimental: measure of how much melody - DONE, but what is the threshold??
   });
 
   property
@@ -414,7 +414,7 @@ MuseScore {
     var cursor = curScore.newCursor();
     cursor.rewind(0);
     key = cursor.keySignature + 14;
-    if (mode == "MajorMinor") key += 3;
+    if (mode == "Minor") key += 3;
     var segment = cursor.segment;
 
     // Process all dyads and mark intervals
@@ -606,7 +606,7 @@ MuseScore {
 
         if (counterpointRestrictions.Accidentals) {
           if (dyads[index].topNote.accidental) {
-            if (mode != "MajorMinor") {
+            if (mode != "Minor") {
               error.annotate(errorMessage.Accidentals, colorError);
               errorDetails.text += "Measure " + dyads[index].measure + ": Accidentals are restricted in this species\n";
               dyads[index].topNote.accidental.color = "#ff0000";
@@ -745,7 +745,7 @@ MuseScore {
         }
 
         if (counterpointRestrictions.Cadence_raised_LT && index <= dyads.length - 2 &&
-          dyads[index].isVchord() && dyads[index + 1].isIchord() && mode == "MajorMinor" &&
+          dyads[index].isVchord() && dyads[index + 1].isIchord() && mode == "Minor" &&
           dyads[index].topNote.sd == 7 && !dyads[index].topNote.accidental) {
           error.annotate(errorMessage.Cadence_raised_LT, colorError);
           errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone needs to be raised at cadence\n";

@@ -3,17 +3,17 @@ import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Counterpoint.Check All Errors"
+  menuPath: "Plugins.Counterpoint.Species 4 Minor"
   description: "Check for Errors in Tonal Counterpoint Writing"
   version: "0.41"
 
   property
-  var mode: "Major";
+  var mode: "Minor";
   property
   var counterpointRestrictions: Object.freeze({
     Show_Intervals: true, // can be turned off if you want your students to figure these out themselves
     Dissonant_Downbeats: true, // true means that these things will be checked, ie errors - DONE
-    Dissonant_Offbeats: true,
+    Dissonant_Offbeats: true, // DONE
     Voice_Crossing: true, // DONE
     Accidentals: true, // will still allow raised 6 and raised 7 in minor - DONE
     Melodic_Perfect_Parallels: true, // DONE
@@ -41,7 +41,7 @@ MuseScore {
     Allow_Accented_Neighbor: true, // for species 4
     Nota_Cambiata: false, // DONE
     Double_Neighbor: true, // the more general version of nota combiata that can move up or down - DONE
-    Escape_Tone: true, // overrides Leap_From_Dissonance DONE
+    Escape_Tone: false, // overrides Leap_From_Dissonance DONE
     Step_Back_After_Leap: true, // warns if leap of 6th or octave doesn't step back the opposite direction - DONE
     Max_Perfect: 50, // percent; warn if too many perfect intervals - DONE
     Max_Leaps: 50, // percent; warn if too many leaps - DONE

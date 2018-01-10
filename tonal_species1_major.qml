@@ -3,7 +3,7 @@ import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Counterpoint.Check All Errors"
+  menuPath: "Plugins.Counterpoint.Species 1 Major"
   description: "Check for Errors in Tonal Counterpoint Writing"
   version: "0.41"
 
@@ -13,7 +13,7 @@ MuseScore {
   var counterpointRestrictions: Object.freeze({
     Show_Intervals: true, // can be turned off if you want your students to figure these out themselves
     Dissonant_Downbeats: true, // true means that these things will be checked, ie errors - DONE
-    Dissonant_Offbeats: true,
+    Dissonant_Offbeats: false, // why bother
     Voice_Crossing: true, // DONE
     Accidentals: true, // will still allow raised 6 and raised 7 in minor - DONE
     Melodic_Perfect_Parallels: true, // DONE
@@ -25,29 +25,29 @@ MuseScore {
     Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Retardation - DONE
     Melodic_Aug_Or_Dim: true, // DONE
     Melodic_Seventh: true, // DONE
-    Offbeat: false, // no offbeats, ie first species - DONE
+    Offbeat: true, // no offbeats, ie first species - DONE
     Doubled_LT: true, // DONE
     Cadence_raised_LT: true, // DONE
     Cadence_LT_Resolution: true, // DONE
     V7_Resolution: true, // DONE
     Repeated_Note_Over_Barline: false, // strict species forbids this in spec 2 & 3 but not 4 - DONE
-    Repeated_Offbeat: true, // This is usually true - DONE
-    Allow_Passing_Tone: true, // DONE
-    Allow_Neighbor_Tone: true, // DONE
-    Allow_Appoggiatura: true, // DONE
-    Allow_Retardation: true, // DONE
-    Allow_Suspension: true, // DONE
-    Allow_Accented_Passing_Tone: true, // for species 4
-    Allow_Accented_Neighbor: true, // for species 4
+    Repeated_Offbeat: false, // This is usually true - DONE
+    Allow_Passing_Tone: false, // DONE
+    Allow_Neighbor_Tone: false, // DONE
+    Allow_Appoggiatura: false, // DONE
+    Allow_Retardation: false, // DONE
+    Allow_Suspension: false, // DONE
+    Allow_Accented_Passing_Tone: false, // for species 4
+    Allow_Accented_Neighbor: false, // for species 4
     Nota_Cambiata: false, // DONE
-    Double_Neighbor: true, // the more general version of nota combiata that can move up or down - DONE
-    Escape_Tone: true, // overrides Leap_From_Dissonance DONE
+    Double_Neighbor: false, // the more general version of nota combiata that can move up or down - DONE
+    Escape_Tone: false, // overrides Leap_From_Dissonance DONE
     Step_Back_After_Leap: true, // warns if leap of 6th or octave doesn't step back the opposite direction - DONE
     Max_Perfect: 50, // percent; warn if too many perfect intervals - DONE
     Max_Leaps: 50, // percent; warn if too many leaps - DONE
     Max_Consecutive_36: 4, // maximum number of consecutive 3rds or 6ths - DONE
     Max_Consecutive_Leaps: 4, // DONE
-    Min_Std_Dev: 2 // experimental: measure of how much melody - DONE, but what is the threshold??
+    Min_Std_Dev: 1 // experimental: measure of how much melody - DONE, but what is the threshold??
   });
 
   property
