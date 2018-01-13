@@ -32,6 +32,7 @@ MuseScore {
     V7_Resolution: true, // DONE
     Repeated_Note_Over_Barline: true, // strict species forbids this in spec 2 & 3 but not 4 - DONE
     Repeated_Offbeat: true, // This is usually true - DONE
+    Unison_On_Downbeat: true, // Prohibits harmonic unison except beginning and end and offbeats
     Allow_Passing_Tone: true, // DONE
     Allow_Neighbor_Tone: true, // DONE
     Allow_Appoggiatura: false, // DONE
@@ -72,6 +73,7 @@ MuseScore {
     V7_Resolution: "7th",
     Repeated_Note_Over_Barline: "rep", // strict species forbids this in spec 2 & 3 but not 4
     Repeated_Offbeat: "rep", // This is usually true
+    Unison_On_Downbeat: "~1", // Prohibits harmonic unison except beginning and end and offbeats
     Allow_Passing_Tone: "PT",
     Allow_Neighbor_Tone: "NT",
     Allow_Appoggiatura: "APP",
@@ -457,6 +459,14 @@ MuseScore {
           if (!dyads[index].newBot) {
             error.annotate(errorMessage.Offbeat, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": First species allows only one melody note per bass note\n";
+          }
+        }
+
+        if (counterpointRestrictions.Unison_On_Downbeat) {
+          if (dyads[index].interval.size == 1 && dyads[index].newBot &&
+            index < dyads.length - 1 && index > 0) {
+            error.annotate(errorMessage.Unison_On_Downbeat, colorError);
+            errorDetails.text += "Measure " + dyads[index].measure + ": P1 may only occur at the start, end, or offbeat\n";
           }
         }
 

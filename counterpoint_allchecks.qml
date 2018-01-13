@@ -33,6 +33,7 @@ MuseScore {
     V7_Resolution: true, // DONE
     Repeated_Note_Over_Barline: false, // strict species forbids this in spec 2 & 3 but not 4 - DONE
     Repeated_Offbeat: true, // This is usually true - DONE
+    Unison_On_Downbeat: true, // Prohibits harmonic unison except beginning and end and offbeats
     Allow_Passing_Tone: true, // DONE
     Allow_Neighbor_Tone: true, // DONE
     Allow_Appoggiatura: true, // DONE
@@ -74,6 +75,7 @@ MuseScore {
     V7_Resolution: "7th",
     Repeated_Note_Over_Barline: "rep", // strict species forbids this in spec 2 & 3 but not 4
     Repeated_Offbeat: "rep", // This is usually true
+    Unison_On_Downbeat: "~1", // Prohibits harmonic unison except beginning and end and offbeats
     Allow_Passing_Tone: "PT",
     Allow_Neighbor_Tone: "NT",
     Allow_Appoggiatura: "APP",
@@ -293,8 +295,7 @@ MuseScore {
       if (this.botNote) {
         if (mode == "Modal") this.consonances = inversion.FIRSTINV7;
         else this.consonances = inversion.ROOT;
-      }
-      else this.fb = this.prevFB;
+      } else this.fb = this.prevFB;
       if (this.fb && this.fb.type == Element.FIGURED_BASS) {
         if (this.fb.text == "6" || this.fb.text == "6\n3") this.consonances = inversion.FIRSTINV;
         if (this.fb.text == "6\n4") this.consonances = inversion.SECONDINV;
@@ -473,6 +474,14 @@ MuseScore {
               }
             }
 
+            if (counterpointRestrictions.Unison_On_Downbeat) {
+              if (dyads[index].interval.size == 1 && dyads[index].newBot &&
+                index < dyads.length - 1 && index > 0) {
+                error.annotate(errorMessage.Unison_On_Downbeat, colorError);
+                errorDetails.text += "Measure " + dyads[index].measure + ": P1 may only occur at the start, end, or offbeat\n";
+              }
+            }
+
             if (dyads[index].topNote && dyads[index].botNote) {
               if (counterpointRestrictions.Offbeat) {
                 if (!dyads[index].newBot) {
@@ -527,9 +536,9 @@ MuseScore {
                 if (int1.direction == -1 && int2.direction == -1 && int3.direction == 1 &&
                   dyads[index - 1].newBot && !dyads[index].newBot && !dyads[index + 1].newBot && !dyads[index + 2].newBot &&
                   ((dyads[index - 1].interval.size == 8 && dyads[index].interval.size == 7 &&
-                  dyads[index + 1].interval.size == 5 && dyads[index + 2].interval.size == 6) ||
-                  (dyads[index - 1].interval.size == 6 && dyads[index].interval.size == 5 &&
-                  dyads[index + 1].interval.size == 3 && dyads[index + 2].interval.size == 4))) {
+                      dyads[index + 1].interval.size == 5 && dyads[index + 2].interval.size == 6) ||
+                    (dyads[index - 1].interval.size == 6 && dyads[index].interval.size == 5 &&
+                      dyads[index + 1].interval.size == 3 && dyads[index + 2].interval.size == 4))) {
                   error.annotate(errorMessage.Nota_Cambiata, colorCT);
                   dyads[index].permittedDissonance = true;
                   dyads[index + 1].permittedDissonance = true;
