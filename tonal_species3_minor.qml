@@ -5,7 +5,7 @@ import MuseScore 1.0
 MuseScore {
   menuPath: "Plugins.Proof Reading.Counterpoint.Tonal.Species 3 Minor"
   description: "Check for Errors in Tonal Counterpoint Writing"
-  version: "0.5"
+  version: "0.51"
 
   property
   var mode: "Minor";

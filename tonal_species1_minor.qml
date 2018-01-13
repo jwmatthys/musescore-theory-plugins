@@ -5,7 +5,7 @@ import MuseScore 1.0
 MuseScore {
   menuPath: "Plugins.Proof Reading.Counterpoint.Tonal.Species 1 Minor"
   description: "Check for Errors in Tonal Counterpoint Writing"
-  version: "0.5"
+  version: "0.51"
 
   property
   var mode: "Minor";
@@ -45,7 +45,7 @@ MuseScore {
     Escape_Tone: false, // overrides Leap_From_Dissonance DONE
     Step_Back_After_Leap: true, // warns if leap of 6th or octave doesn't step back the opposite direction - DONE
     Max_Perfect: 50, // percent; warn if too many perfect intervals - DONE
-    Max_Leaps: 50, // percent; warn if too many leaps - DONE
+    Max_Leaps: 60, // percent; warn if too many leaps - DONE
     Max_Consecutive_36: 4, // maximum number of consecutive 3rds or 6ths - DONE
     Max_Consecutive_Leaps: 4, // DONE
     Min_Std_Dev: 1 // experimental: measure of how much melody - DONE, but what is the threshold??
