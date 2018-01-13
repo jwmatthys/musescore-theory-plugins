@@ -169,7 +169,7 @@ MuseScore {
           botsd = this.note1.sd;
         }
         var tic = (21 + topsd - botsd) % 7;
-        if (tic == 0) tic = 7;
+        if (tic == 0 && Math.abs(this.note1.pitch - this.note2.pitch) > 2) tic = 7;
         this.size = tic + 1;
       }
     }
