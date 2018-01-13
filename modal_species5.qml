@@ -191,7 +191,7 @@ MuseScore {
       if (this.note1 && this.note2) {
         ic = Math.abs(this.note1.pitch - this.note2.pitch) % 12;
         this.quality = intervalQual.OTHER;
-        if (this.size == 8) {
+        if (this.size == 8 || this.size == 1) {
           if (11 == ic) this.quality = intervalQual.DIM;
           if (0 == ic) this.quality = intervalQual.PERFECT;
           if (1 == ic) this.quality = intervalQual.AUGMENTED;
