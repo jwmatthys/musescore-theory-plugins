@@ -23,7 +23,7 @@ MuseScore {
     Hidden_Parallels: true, // Consecutive parallel P5 or P8 moving in opposite direction - DONE
     Leap_To_Similar_Perfect: true, // melody leaps to a perfect interval in similar motion - DONE
     Leap_From_Dissonance: true, // a general truism - DONE
-    Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Retardation - DONE
+    Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Downward_Appoggiatura - DONE
     Melodic_Aug_Or_Dim: true, // DONE
     Melodic_Seventh: true, // DONE
     Offbeat: false, // no offbeats, ie first species - DONE
@@ -37,8 +37,9 @@ MuseScore {
     Allow_Passing_Tone: true, // DONE
     Allow_Neighbor_Tone: true, // DONE
     Allow_Appoggiatura: true, // DONE
-    Allow_Retardation: true, // DONE
+    Allow_Downward_Appoggiatura: true, // DONE
     Allow_Suspension: true, // DONE
+    Allow_Retardation: true, // DONE
     Allow_Accented_Passing_Tone: true, // for species 4
     Allow_Accented_Neighbor: true, // for species 4
     Nota_Cambiata: false, // DONE
@@ -79,8 +80,9 @@ MuseScore {
     Allow_Passing_Tone: "PT",
     Allow_Neighbor_Tone: "NT",
     Allow_Appoggiatura: "APP",
-    Allow_Retardation: "RET",
+    Allow_Downward_Appoggiatura: "APP",
     Allow_Suspension: "SUS",
+    Allow_Retardation: "RET",
     Allow_Accented_Passing_Tone: "APT", // for species 4
     Allow_Accented_Neighbor: "AN", // for species 4
     Nota_Cambiata: "NC",
@@ -568,8 +570,19 @@ MuseScore {
                 if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
                   !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
                   dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
-                  ((melodicInterval2.direction < 0) || (melodicInterval2.direction > 0 && melodicInterval2.quality == intervalQual.MINOR))) {
+                  melodicInterval2.direction < 0) {
                   error.annotate(errorMessage.Allow_Suspension, colorCT);
+                  dyads[index].permittedDissonance = true;
+                }
+              }
+
+              if (counterpointRestrictions.Allow_Retardation && index > 0 && index < dyads.length - 2) {
+                var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+                if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
+                  !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
+                  dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
+                  melodicInterval2.direction > 0 && melodicInterval2.quality == intervalQual.MINOR) {
+                  error.annotate(errorMessage.Allow_Retardation, colorCT);
                   dyads[index].permittedDissonance = true;
                 }
               }
@@ -584,12 +597,12 @@ MuseScore {
                 }
               }
 
-              if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Retardation) {
+              if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Downward_Appoggiatura) {
                 var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
                 var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
                 if (melodicInterval.direction < 0 && melodicInterval.size > 2 && !dyads[index + 1].nct && dyads[index].newBot &&
                   melodicInterval2.direction > 0 && melodicInterval2.size == 2 && melodicInterval2.quality == intervalQual.MINOR) {
-                  error.annotate(errorMessage.Allow_Retardation, colorCT);
+                  error.annotate(errorMessage.Allow_Downward_Appoggiatura, colorCT);
                   dyads[index].permittedDissonance = true;
                 }
               }
@@ -843,6 +856,8 @@ MuseScore {
           if (pitchDeviation < counterpointRestrictions.Min_Std_Dev) {
             errorDetails.text = errorDetails.text + "Melody should have larger range";
           }
-          errorDetails.visible = true; Qt.quit();
+          
+          errorDetails.visible = true;
+          Qt.quit();
         }
       }
