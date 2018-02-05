@@ -5,7 +5,7 @@ import MuseScore 1.0
 MuseScore {
   menuPath: "Plugins.Proof Reading.Counterpoint.Parent"
   description: "Check for Errors in Tonal Counterpoint Writing"
-  version: "0.51"
+  version: "0.52"
 
   property
   var mode: "Major";

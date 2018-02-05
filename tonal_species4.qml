@@ -3,20 +3,20 @@ import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Proof Reading.Counterpoint.Modal.Modal Species IV"
-  description: "Check for Errors in Strict Modal Counterpoint Writing"
+  menuPath: "Plugins.Proof Reading.Counterpoint.Tonal.Tonal Species 4"
+  description: "Check for Errors in Tonal Counterpoint Writing"
   version: "0.52"
 
   property
-  var mode: "Modal";
+  var mode: "Major";
   property
   var counterpointRestrictions: Object.freeze({
     Show_Intervals: true, // can be turned off if you want your students to figure these out themselves
     Dissonant_Downbeats: true, // true means that these things will be checked, ie errors - DONE
     Dissonant_Offbeats: true,
     Voice_Crossing: true, // DONE
-    Accidentals: false, // will still allow raised 6 and raised 7 in minor - DONE
-    Perfect_First_And_Last: true, // generally false for tonal, true for modal
+    Accidentals: true, // will still allow raised 6 and raised 7 in minor - DONE
+    Perfect_First_And_Last: false, // generally false for tonal, true for modal
     Melodic_Perfect_Parallels: true, // DONE
     Consecutive_Downbeat_Parallels: true, // DONE
     Direct_Fifths: true, // refers specifically to P5-d5 or d5-P5 - DONE
@@ -26,11 +26,11 @@ MuseScore {
     Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Downward_Appoggiatura - DONE
     Melodic_Aug_Or_Dim: true, // DONE
     Melodic_Seventh: true, // DONE
-    Offbeat: true, // no offbeats, ie first species - DONE
-    Doubled_LT: false, // DONE
-    Cadence_raised_LT: false, // DONE
-    Cadence_LT_Resolution: false, // DONE
-    V7_Resolution: false, // DONE
+    Offbeat: false, // no offbeats, ie first species - DONE
+    Doubled_LT: true, // DONE
+    Cadence_raised_LT: true, // DONE
+    Cadence_LT_Resolution: true, // DONE
+    V7_Resolution: true, // DONE
     Repeated_Note_Over_Barline: false, // strict species forbids this in spec 2 & 3 but not 4 - DONE
     Repeated_Offbeat: true, // This is usually true - DONE
     Unison_On_Downbeat: true, // Prohibits harmonic unison except beginning and end and offbeats
@@ -42,7 +42,7 @@ MuseScore {
     Allow_Retardation: true, // DONE
     Allow_Accented_Passing_Tone: true, // for species 4
     Allow_Accented_Neighbor: true, // for species 4
-    Nota_Cambiata: true, // DONE
+    Nota_Cambiata: false, // DONE
     Double_Neighbor: true, // DONE
     Escape_Tone: false, // overrides Leap_From_Dissonance DONE
     Step_Back_After_Leap: true, // warns if leap of 6th or octave doesn't step back the opposite direction - DONE
