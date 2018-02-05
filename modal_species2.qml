@@ -3,19 +3,19 @@ import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Proof Reading.Counterpoint.Modal.Modal Species 2"
+  menuPath: "Plugins.Proof Reading.Counterpoint.Parent"
   description: "Check for Errors in Tonal Counterpoint Writing"
   version: "0.51"
 
   property
-  var mode: "Modal";
+  var mode: "Major";
   property
   var counterpointRestrictions: Object.freeze({
     Show_Intervals: true, // can be turned off if you want your students to figure these out themselves
     Dissonant_Downbeats: true, // true means that these things will be checked, ie errors - DONE
     Dissonant_Offbeats: true,
     Voice_Crossing: true, // DONE
-    Accidentals: false, // will still allow raised 6 and raised 7 in minor - DONE
+    Accidentals: true, // will still allow raised 6 and raised 7 in minor - DONE
     Perfect_First_And_Last: true, // generally false for tonal, true for modal
     Melodic_Perfect_Parallels: true, // DONE
     Consecutive_Downbeat_Parallels: true, // DONE
@@ -23,27 +23,28 @@ MuseScore {
     Hidden_Parallels: true, // Consecutive parallel P5 or P8 moving in opposite direction - DONE
     Leap_To_Similar_Perfect: true, // melody leaps to a perfect interval in similar motion - DONE
     Leap_From_Dissonance: true, // a general truism - DONE
-    Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Retardation - DONE
+    Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Downward_Appoggiatura - DONE
     Melodic_Aug_Or_Dim: true, // DONE
     Melodic_Seventh: true, // DONE
     Offbeat: false, // no offbeats, ie first species - DONE
-    Doubled_LT: false, // DONE
-    Cadence_raised_LT: false, // DONE
-    Cadence_LT_Resolution: false, // DONE
-    V7_Resolution: false, // DONE
-    Repeated_Note_Over_Barline: true, // strict species forbids this in spec 2 & 3 but not 4 - DONE
+    Doubled_LT: true, // DONE
+    Cadence_raised_LT: true, // DONE
+    Cadence_LT_Resolution: true, // DONE
+    V7_Resolution: true, // DONE
+    Repeated_Note_Over_Barline: false, // strict species forbids this in spec 2 & 3 but not 4 - DONE
     Repeated_Offbeat: true, // This is usually true - DONE
     Unison_On_Downbeat: true, // Prohibits harmonic unison except beginning and end and offbeats
     Allow_Passing_Tone: true, // DONE
-    Allow_Neighbor_Tone: false, // DONE
-    Allow_Appoggiatura: false, // DONE
-    Allow_Retardation: false, // DONE
-    Allow_Suspension: false, // DONE
-    Allow_Accented_Passing_Tone: false, // for species 4
-    Allow_Accented_Neighbor: false, // for species 4
+    Allow_Neighbor_Tone: true, // DONE
+    Allow_Appoggiatura: true, // DONE
+    Allow_Downward_Appoggiatura: true, // DONE
+    Allow_Suspension: true, // DONE
+    Allow_Retardation: true, // DONE
+    Allow_Accented_Passing_Tone: true, // for species 4
+    Allow_Accented_Neighbor: true, // for species 4
     Nota_Cambiata: false, // DONE
-    Double_Neighbor: false, // the more general version of nota combiata that can move up or down - DONE
-    Escape_Tone: false, // overrides Leap_From_Dissonance DONE
+    Double_Neighbor: true, // DONE
+    Escape_Tone: true, // overrides Leap_From_Dissonance DONE
     Step_Back_After_Leap: true, // warns if leap of 6th or octave doesn't step back the opposite direction - DONE
     Max_Perfect: 50, // percent; warn if too many perfect intervals - DONE
     Max_Leaps: 50, // percent; warn if too many leaps - DONE
@@ -79,8 +80,9 @@ MuseScore {
     Allow_Passing_Tone: "PT",
     Allow_Neighbor_Tone: "NT",
     Allow_Appoggiatura: "APP",
-    Allow_Retardation: "RET",
+    Allow_Downward_Appoggiatura: "APP",
     Allow_Suspension: "SUS",
+    Allow_Retardation: "RET",
     Allow_Accented_Passing_Tone: "APT", // for species 4
     Allow_Accented_Neighbor: "AN", // for species 4
     Nota_Cambiata: "NC",
@@ -421,6 +423,9 @@ MuseScore {
     var prevDownbeat = 0;
     var measure = 1;
     var cursor = curScore.newCursor();
+    if (curScore.poet.toUpperCase() == "MINOR") {
+      mode = "Minor";
+    }
     cursor.rewind(0);
     key = cursor.keySignature + 14;
     if (mode == "Minor") key += 3;
@@ -466,383 +471,396 @@ MuseScore {
           error.annotate(errorMessage.Perfect_First_And_Last, colorError);
           errorDetails.text += "Measure " + dyads[index].measure + ": Must begin on perfect consonance\n";
         } else if (index == 1 && !dyads[0].topNote && !dyads[index].interval.isPerfect()) { // if it starts with rest
-          error.annotate(errorMessage.Perfect_First_And_Last, colorError);
-          errorDetails.text += "Measure " + dyads[index].measure + ": Must begin on perfect consonance\n";
-        } else if (index == dyads.length - 1 && !dyads[index].interval.isPerfect()) {
-          error.annotate(errorMessage.Perfect_First_And_Last, colorError);
-          errorDetails.text += "Measure " + dyads[index].measure + ": Must end on perfect consonance\n";
-        }
-      }
-
-      if (counterpointRestrictions.Unison_On_Downbeat) {
-        if (dyads[index].interval.size == 1 && dyads[index].newBot &&
-          index < dyads.length - 1 && index > 0) {
-          error.annotate(errorMessage.Unison_On_Downbeat, colorError);
-          errorDetails.text += "Measure " + dyads[index].measure + ": P1 may only occur at the start, end, or offbeat\n";
-        }
-      }
-
-      if (dyads[index].topNote && dyads[index].botNote) {
-        if (counterpointRestrictions.Offbeat) {
-          if (!dyads[index].newBot) {
-            error.annotate(errorMessage.Offbeat, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": First species allows only one melody note per bass note\n";
+            error.annotate(errorMessage.Perfect_First_And_Last, colorError);
+            errorDetails.text += "Measure " + dyads[index].measure + ": Must begin on perfect consonance\n";
+          } else if (index == dyads.length - 1 && !dyads[index].interval.isPerfect()) {
+              error.annotate(errorMessage.Perfect_First_And_Last, colorError);
+              errorDetails.text += "Measure " + dyads[index].measure + ": Must end on perfect consonance\n";
+            }
           }
-        }
 
-        if (index > 0 && index < (dyads.length - 1)) // Let's go after those triples (PT, NT, app, ret, sus, apt)
-        {
-          if (counterpointRestrictions.Allow_Passing_Tone) {
-            if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
-              if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
-                error.annotate(errorMessage.Allow_Passing_Tone, colorCT);
+          if (counterpointRestrictions.Unison_On_Downbeat) {
+            if (dyads[index].interval.size == 1 && dyads[index].newBot &&
+              index < dyads.length - 1 && index > 0) {
+              error.annotate(errorMessage.Unison_On_Downbeat, colorError);
+              errorDetails.text += "Measure " + dyads[index].measure + ": P1 may only occur at the start, end, or offbeat\n";
+            }
+          }
+
+          if (dyads[index].topNote && dyads[index].botNote) {
+            if (counterpointRestrictions.Offbeat) {
+              if (!dyads[index].newBot) {
+                error.annotate(errorMessage.Offbeat, colorError);
+                errorDetails.text += "Measure " + dyads[index].measure + ": First species allows only one melody note per bass note\n";
+              }
+            }
+
+            if (index > 0 && index < (dyads.length - 1)) // Let's go after those triples (PT, NT, app, ret, sus, apt)
+            {
+              if (counterpointRestrictions.Allow_Passing_Tone) {
+                if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
+                  if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
+                    error.annotate(errorMessage.Allow_Passing_Tone, colorCT);
+                    dyads[index].permittedDissonance = true;
+                  }
+                }
+              }
+
+              if (counterpointRestrictions.Allow_Accented_Passing_Tone) {
+                if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
+                  if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
+                    error.annotate(errorMessage.Allow_Accented_Passing_Tone, colorCT);
+                    dyads[index].permittedDissonance = true;
+                  }
+                }
+              }
+
+              if (counterpointRestrictions.Allow_Neighbor_Tone) {
+                if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
+                  if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
+                    error.annotate(errorMessage.Allow_Neighbor_Tone, colorCT);
+                    dyads[index].permittedDissonance = true;
+                  }
+                }
+              }
+
+              if (counterpointRestrictions.Allow_Accented_Neighbor) {
+                if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
+                  if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
+                    error.annotate(errorMessage.Allow_Accented_Neighbor, colorCT);
+                    dyads[index].permittedDissonance = true;
+                  }
+                }
+              }
+            }
+
+            if (counterpointRestrictions.Nota_Cambiata && index > 0 && index < dyads.length - 3) {
+              var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+              var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+              var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
+              if (int1.direction == -1 && int2.direction == -1 && int3.direction == 1 &&
+                dyads[index - 1].newBot && !dyads[index].newBot && !dyads[index + 1].newBot && !dyads[index + 2].newBot &&
+                ((dyads[index - 1].interval.size == 8 && dyads[index].interval.size == 7 &&
+                    dyads[index + 1].interval.size == 5 && dyads[index + 2].interval.size == 6) ||
+                  (dyads[index - 1].interval.size == 6 && dyads[index].interval.size == 5 &&
+                    dyads[index + 1].interval.size == 3 && dyads[index + 2].interval.size == 4))) {
+                error.annotate(errorMessage.Nota_Cambiata, colorCT);
+                dyads[index].permittedDissonance = true;
+                dyads[index + 1].permittedDissonance = true;
+                dyads[index + 2].permittedDissonance = true;
+              }
+            }
+
+            if (counterpointRestrictions.Double_Neighbor && index > 0 && index < dyads.length - 4) {
+              var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+              var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+              var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
+              var int4 = new cInterval(dyads[index + 2].topNote, dyads[index + 3].topNote);
+              var dir1 = int1.direction;
+              if (dir1 != 0 && int1.direction == dir1 && int2.direction == dir1 * -1 && int3.direction == dir1 && int4.direction == dir1 &&
+                dyads[index - 1].newBot && !dyads[index].newBot && !dyads[index + 1].newBot && !dyads[index + 2].newBot && dyads[index + 3].newBot &&
+                int1.size == 2 && int2.size == 3 && int3.size == 2 && int4.size == 2 &&
+                !dyads[index - 1].nct && !dyads[index + 3].nct) {
+                error.annotate(errorMessage.Double_Neighbor, colorCT);
+                dyads[index].permittedDissonance = true;
+                dyads[index + 1].permittedDissonance = true;
+                dyads[index + 2].permittedDissonance = true;
+              }
+            }
+
+            if (counterpointRestrictions.Allow_Suspension && index > 0 && index < dyads.length - 2) {
+              var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+              if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
+                !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
+                dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
+                melodicInterval2.direction < 0) {
+                error.annotate(errorMessage.Allow_Suspension, colorCT);
                 dyads[index].permittedDissonance = true;
               }
             }
-          }
 
-          if (counterpointRestrictions.Allow_Accented_Passing_Tone) {
-            if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
-              if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
-                error.annotate(errorMessage.Allow_Accented_Passing_Tone, colorCT);
+            if (counterpointRestrictions.Allow_Retardation && index > 0 && index < dyads.length - 2) {
+              var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+              if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
+                !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
+                dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
+                melodicInterval2.direction > 0 && melodicInterval2.quality == intervalQual.MINOR) {
+                error.annotate(errorMessage.Allow_Retardation, colorCT);
                 dyads[index].permittedDissonance = true;
               }
             }
-          }
 
-          if (counterpointRestrictions.Allow_Neighbor_Tone) {
-            if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
-              if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
-                error.annotate(errorMessage.Allow_Neighbor_Tone, colorCT);
+            if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Appoggiatura) {
+              var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+              var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+              if (melodicInterval.direction > 0 && melodicInterval.size > 2 && dyads[index].newBot && dyads[index].nct &&
+                melodicInterval2.direction < 0 && melodicInterval2.size == 2 && !dyads[index + 1].nct) {
+                error.annotate(errorMessage.Allow_Appoggiatura, colorCT);
                 dyads[index].permittedDissonance = true;
               }
             }
-          }
 
-          if (counterpointRestrictions.Allow_Accented_Neighbor) {
-            if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
-              if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
-                error.annotate(errorMessage.Allow_Accented_Neighbor, colorCT);
+            if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Downward_Appoggiatura) {
+              var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+              var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+              if (melodicInterval.direction < 0 && melodicInterval.size > 2 && !dyads[index + 1].nct && dyads[index].newBot &&
+                melodicInterval2.direction > 0 && melodicInterval2.size == 2 && melodicInterval2.quality == intervalQual.MINOR) {
+                error.annotate(errorMessage.Allow_Downward_Appoggiatura, colorCT);
                 dyads[index].permittedDissonance = true;
               }
             }
-          }
-        }
 
-        if (counterpointRestrictions.Nota_Cambiata && index > 0 && index < dyads.length - 3) {
-          var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
-          if (int1.direction == -1 && int2.direction == -1 && int3.direction == 1 &&
-            dyads[index - 1].newBot && !dyads[index].newBot && !dyads[index + 1].newBot && !dyads[index + 2].newBot &&
-            ((dyads[index - 1].interval.size == 8 && dyads[index].interval.size == 7 &&
-                dyads[index + 1].interval.size == 5 && dyads[index + 2].interval.size == 6) ||
-              (dyads[index - 1].interval.size == 6 && dyads[index].interval.size == 5 &&
-                dyads[index + 1].interval.size == 3 && dyads[index + 2].interval.size == 4))) {
-            error.annotate(errorMessage.Nota_Cambiata, colorCT);
-            dyads[index].permittedDissonance = true;
-            dyads[index + 1].permittedDissonance = true;
-            dyads[index + 2].permittedDissonance = true;
-          }
-        }
-
-        if (counterpointRestrictions.Double_Neighbor && index > 0 && index < dyads.length - 4) {
-          var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
-          var int4 = new cInterval(dyads[index + 2].topNote, dyads[index + 3].topNote);
-          var dir1 = int1.direction;
-          if (dir1 != 0 && int1.direction == dir1 && int2.direction == dir1 * -1 && int3.direction == dir1 && int4.direction == dir1 &&
-            dyads[index - 1].newBot && !dyads[index].newBot && !dyads[index + 1].newBot && !dyads[index + 2].newBot && dyads[index + 3].newBot &&
-            int1.size == 2 && int2.size == 3 && int3.size == 2 && int4.size == 2 &&
-            !dyads[index - 1].nct && !dyads[index + 3].nct) {
-            error.annotate(errorMessage.Double_Neighbor, colorCT);
-            dyads[index].permittedDissonance = true;
-            dyads[index + 1].permittedDissonance = true;
-            dyads[index + 2].permittedDissonance = true;
-          }
-        }
-
-        if (counterpointRestrictions.Allow_Suspension && index > 0 && index < dyads.length - 2) {
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
-            !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
-            dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
-            ((melodicInterval2.direction < 0) || (melodicInterval2.direction > 0 && melodicInterval2.quality == intervalQual.MINOR))) {
-            error.annotate(errorMessage.Allow_Suspension, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-        if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Appoggiatura) {
-          var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (melodicInterval.direction > 0 && melodicInterval.size > 2 && dyads[index].newBot && dyads[index].nct &&
-            melodicInterval2.direction < 0 && melodicInterval2.size == 2 && !dyads[index + 1].nct) {
-            error.annotate(errorMessage.Allow_Appoggiatura, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-        if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Retardation) {
-          var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (melodicInterval.direction < 0 && melodicInterval.size > 2 && !dyads[index + 1].nct && dyads[index].newBot &&
-            melodicInterval2.direction > 0 && melodicInterval2.size == 2 && melodicInterval2.quality == intervalQual.MINOR) {
-            error.annotate(errorMessage.Allow_Retardation, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-        if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Escape_Tone) {
-          var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (melodicInterval.size == 2 && !!dyads[index - 1].nct && dyads[index].nct &&
-            !dyads[index].newBot && !dyads[index + 1].nct &&
-            melodicInterval2.direction != 0 && melodicInterval.direction == -1 * melodicInterval2.direction) {
-            error.annotate(errorMessage.Escape_Tone, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-
-        if (counterpointRestrictions.Dissonant_Downbeats) {
-          if (dyads[index].newBot && dyads[index].isDissonant()) {
-            error.annotate(errorMessage.Dissonant_Downbeats, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " over bass note change\n";
-          }
-        }
-
-        if (counterpointRestrictions.Dissonant_Offbeats) {
-          if (!dyads[index].newBot && dyads[index].isDissonant()) {
-            error.annotate(errorMessage.Dissonant_Offbeats, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " off the beat\n";
-          }
-        }
-
-
-        if (counterpointRestrictions.Voice_Crossing) {
-          if (dyads[index].voiceCross()) {
-            error.annotate(errorMessage.Voice_Crossing, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Melody crosses bass\n";
-          }
-        }
-
-        if (counterpointRestrictions.Doubled_LT) {
-          if (dyads[index].topNote.sd == 7 && dyads[index].botNote.sd == 7) {
-            error.annotate(errorMessage.Doubled_LT, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Doubled Leading Tone\n";
-          }
-        }
-
-        if (counterpointRestrictions.Accidentals) {
-          if (dyads[index].topNote.accidental) {
-            if (mode != "Minor") {
-              error.annotate(errorMessage.Accidentals, colorError);
-              errorDetails.text += "Measure " + dyads[index].measure + ": Accidentals are restricted in this species\n";
-              dyads[index].topNote.accidental.color = "#ff0000";
-            } else {
-              if (dyads[index].topNote.sd < 6 || dyads[index].topNote.sd > 7) {
-                error.annotate(errorMessage.Accidentals, colorError);
-                errorDetails.text += "Measure " + dyads[index].measure + ": Only scale degrees 6 & 7 can be altered with accidentals in this species\n";
-                dyads[index].topNote.accidental.color = "#ff0000";
+            if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Escape_Tone) {
+              var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+              var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+              if (melodicInterval.size == 2 && !!dyads[index - 1].nct && dyads[index].nct &&
+                !dyads[index].newBot && !dyads[index + 1].nct &&
+                melodicInterval2.direction != 0 && melodicInterval.direction == -1 * melodicInterval2.direction) {
+                error.annotate(errorMessage.Escape_Tone, colorCT);
+                dyads[index].permittedDissonance = true;
               }
             }
-          }
-        }
 
-        if (counterpointRestrictions.Consecutive_Downbeat_Parallels) {
-          if (dyads[index].newBot) {
-            if (index - prevDownbeat > 1 &&
-              dyads[prevDownbeat].interval.isPerfect() &&
-              dyads[index].interval.isPerfect() &&
-              dyads[prevDownbeat].interval.size == dyads[index].interval.size &&
-              motion(dyads[prevDownbeat], dyads[index]) == tonalMotion.SIMILAR) {
-              error.annotate(errorMessage.Consecutive_Downbeat_Parallels + dyads[index].interval.toString(), colorError);
-              errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + " on consecutive downbeats\n";
-            }
-            prevDownbeat = index;
-          }
-        }
 
-      }
-
-      // Now the checks of 2 consecutive notes
-      if (index > 0) {
-        if (counterpointRestrictions.Melodic_Aug_Or_Dim) {
-          var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
-          if (melodicInterval.quality != intervalQual.PERFECT &&
-            melodicInterval.quality != intervalQual.MAJOR &&
-            melodicInterval.quality != intervalQual.MINOR &&
-            melodicInterval.size != null) {
-            error.annotate(errorMessage.Melodic_Aug_Or_Dim + melodicInterval.toString(), colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Melody leaps by dissonant interval " + melodicInterval.toString() + "\n";
-          }
-        }
-        if (counterpointRestrictions.Melodic_Seventh) {
-          var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
-          if (melodicInterval.size == 7) {
-            error.annotate(errorMessage.Melodic_Seventh, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Melody leaps " + melodicInterval.toString() + "\n";
-          }
-        }
-        if (counterpointRestrictions.Melodic_Perfect_Parallels) {
-          if (dyads[index].interval.isPerfect() &&
-            dyads[index - 1].interval.isPerfect() &&
-            dyads[index].interval.size == dyads[index - 1].interval.size &&
-            motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
-            error.annotate(errorMessage.Melodic_Perfect_Parallels + dyads[index].interval.toString(), colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + "\n";
-          }
-        }
-        if (counterpointRestrictions.Direct_Fifths) {
-          if (dyads[index].interval.size == 5 &&
-            dyads[index - 1].interval.size == 5 &&
-            dyads[index].interval.quality != dyads[index - 1].interval.quality &&
-            motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
-            error.annotate(errorMessage.Direct_Fifths, colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Consecutive 5ths in same direction\n";
-          }
-        }
-        if (counterpointRestrictions.Hidden_Parallels) {
-          if (dyads[index].newBot && dyads[index].interval.isPerfect() &&
-            dyads[index - 1].interval.isPerfect() &&
-            dyads[index].interval.size == dyads[index - 1].interval.size &&
-            motion(dyads[index], dyads[index - 1]) == tonalMotion.CONTRARY) {
-            error.annotate(errorMessage.Hidden_Parallels + dyads[index].interval.toString(), colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Hidden " + dyads[index].interval.toString() + "\n";
-          }
-        }
-        if (counterpointRestrictions.Leap_To_Similar_Perfect) {
-          if (dyads[index].interval.isPerfect()) {
-            var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
-            if (motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR &&
-              melodicInterval.size > 2) {
-              error.annotate(errorMessage.Leap_To_Similar_Perfect, colorError);
-              errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps to " + dyads[index].interval.toString() + " in similar motion\n";
-            }
-          }
-        }
-
-        if (counterpointRestrictions.Leap_From_Dissonance) {
-          if (dyads[index - 1].isDissonant()) {
-            var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
-            if (melodicInterval.size > 2) {
-              error.annotate(errorMessage.Leap_From_Dissonance, colorError);
-              errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps from NCT or dissonant interval " + dyads[index - 1].interval.toString() + "\n";
-            }
-          }
-        }
-
-        if (counterpointRestrictions.Leap_To_Dissonance) {
-          if (dyads[index].isDissonant()) {
-            var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-            if (melodicInterval.size > 2) {
-              error.annotate(errorMessage.Leap_To_Dissonance, colorError);
-              errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps to NCT or dissonant interval " + dyads[index].interval.toString() + "\n";
-            }
-          }
-        }
-
-        if (counterpointRestrictions.Repeated_Offbeat) {
-          if (dyads[index].topNote && dyads[index - 1].topNote &&
-            dyads[index].botNote && !dyads[index].newBot &&
-            dyads[index].topNote.pitch == dyads[index - 1].topNote.pitch &&
-            dyads[index].topNote.tpc == dyads[index - 1].topNote.tpc) {
-            error.annotate(errorMessage.Repeated_Offbeat, colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Offbeat melody note repeats\n";
-          }
-        }
-
-        if (counterpointRestrictions.Repeated_Note_Over_Barline) {
-          if (dyads[index].topNote && dyads[index - 1].topNote &&
-            dyads[index].botNote && dyads[index].newBot &&
-            dyads[index].topNote.pitch == dyads[index - 1].topNote.pitch &&
-            dyads[index].topNote.tpc == dyads[index - 1].topNote.tpc &&
-            !dyads[index].permittedDissonance) {
-            error.annotate(errorMessage.Repeated_Note_Over_Barline, colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody note repeats over bass change\n";
-          }
-        }
-
-        if (dyads[index - 1].isVchord() && dyads[index].isIchord()) {
-          if (counterpointRestrictions.V7_Resolution && dyads[index - 1].topNote.sd == 4 && dyads[index].topNote.sd != 3) {
-            error.annotate(errorMessage.V7_Resolution, colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Seventh of V7 must resolve down by step\n";
-          } else if (dyads[index - 1].topNote.sd == 7 && dyads[index].topNote.sd != 1) {
-            error.annotate(errorMessage.V7_Resolution, colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone in V-I must resolve up to tonic\n";
-          }
-        }
-
-        if (counterpointRestrictions.Cadence_raised_LT && index <= dyads.length - 2 &&
-          dyads[index].isVchord() && dyads[index + 1].isIchord() && mode == "Minor" &&
-          dyads[index].topNote.sd == 7 && !dyads[index].topNote.accidental) {
-          error.annotate(errorMessage.Cadence_raised_LT, colorError);
-          errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone needs to be raised at cadence\n";
-        }
-
-        if (counterpointRestrictions.Step_Back_After_Leap && index > 1) {
-          if (!stepsBackAfterBigLeap(dyads[index - 2].topNote, dyads[index - 1].topNote, dyads[index].topNote)) {
-            error.annotate(errorMessage.Step_Back_After_Leap, colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody should step back in opposite direction after a large leap\n";
-          }
-        }
-
-        if (counterpointRestrictions.Max_Consecutive_36 && index > counterpointRestrictions.Max_Consecutive_36 - 1) {
-          var testSize = dyads[index].interval.size;
-          if (testSize == 3 || testSize == 6) {
-            var tooManyConsecutive = true;
-            for (var count = 1; count < counterpointRestrictions.Max_Consecutive_36 + 1; count++) {
-              if (dyads[index - count].interval.size != testSize) {
-                tooManyConsecutive = false;
-                break;
+            if (counterpointRestrictions.Dissonant_Downbeats) {
+              if (dyads[index].newBot && dyads[index].isDissonant()) {
+                error.annotate(errorMessage.Dissonant_Downbeats, colorError);
+                errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " over bass note change\n";
               }
             }
-            if (tooManyConsecutive) {
-              error.annotate(testSize, colorError);
-              errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Too many consecutive " + testSize + "\n";
+
+            if (counterpointRestrictions.Dissonant_Offbeats) {
+              if (!dyads[index].newBot && dyads[index].isDissonant()) {
+                error.annotate(errorMessage.Dissonant_Offbeats, colorError);
+                errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " off the beat\n";
+              }
             }
+
+
+            if (counterpointRestrictions.Voice_Crossing) {
+              if (dyads[index].voiceCross()) {
+                error.annotate(errorMessage.Voice_Crossing, colorError);
+                errorDetails.text += "Measure " + dyads[index].measure + ": Melody crosses bass\n";
+              }
+            }
+
+            if (counterpointRestrictions.Doubled_LT) {
+              if (dyads[index].topNote.sd == 7 && dyads[index].botNote.sd == 7) {
+                error.annotate(errorMessage.Doubled_LT, colorError);
+                errorDetails.text += "Measure " + dyads[index].measure + ": Doubled Leading Tone\n";
+              }
+            }
+
+            if (counterpointRestrictions.Accidentals) {
+              if (dyads[index].topNote.accidental) {
+                if (mode != "Minor") {
+                  error.annotate(errorMessage.Accidentals, colorError);
+                  errorDetails.text += "Measure " + dyads[index].measure + ": Accidentals are restricted in this species\n";
+                  dyads[index].topNote.accidental.color = "#ff0000";
+                } else {
+                  if (dyads[index].topNote.sd < 6 || dyads[index].topNote.sd > 7) {
+                    error.annotate(errorMessage.Accidentals, colorError);
+                    errorDetails.text += "Measure " + dyads[index].measure + ": Only scale degrees 6 & 7 can be altered with accidentals in this species\n";
+                    dyads[index].topNote.accidental.color = "#ff0000";
+                  }
+                }
+              }
+            }
+
+            if (counterpointRestrictions.Consecutive_Downbeat_Parallels) {
+              if (dyads[index].newBot) {
+                if (index - prevDownbeat > 1 &&
+                  dyads[prevDownbeat].interval.isPerfect() &&
+                  dyads[index].interval.isPerfect() &&
+                  dyads[prevDownbeat].interval.size == dyads[index].interval.size &&
+                  motion(dyads[prevDownbeat], dyads[index]) == tonalMotion.SIMILAR) {
+                  error.annotate(errorMessage.Consecutive_Downbeat_Parallels + dyads[index].interval.toString(), colorError);
+                  errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + " on consecutive downbeats\n";
+                }
+                prevDownbeat = index;
+              }
+            }
+
+          }
+
+          // Now the checks of 2 consecutive notes
+          if (index > 0) {
+            if (counterpointRestrictions.Melodic_Aug_Or_Dim) {
+              var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
+              if (melodicInterval.quality != intervalQual.PERFECT &&
+                melodicInterval.quality != intervalQual.MAJOR &&
+                melodicInterval.quality != intervalQual.MINOR &&
+                melodicInterval.size != null) {
+                error.annotate(errorMessage.Melodic_Aug_Or_Dim + melodicInterval.toString(), colorError);
+                errorDetails.text += "Measure " + dyads[index].measure + ": Melody leaps by dissonant interval " + melodicInterval.toString() + "\n";
+              }
+            }
+            if (counterpointRestrictions.Melodic_Seventh) {
+              var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
+              if (melodicInterval.size == 7) {
+                error.annotate(errorMessage.Melodic_Seventh, colorError);
+                errorDetails.text += "Measure " + dyads[index].measure + ": Melody leaps " + melodicInterval.toString() + "\n";
+              }
+            }
+            if (counterpointRestrictions.Melodic_Perfect_Parallels) {
+              if (dyads[index].interval.isPerfect() &&
+                dyads[index - 1].interval.isPerfect() &&
+                dyads[index].interval.size == dyads[index - 1].interval.size &&
+                motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
+                error.annotate(errorMessage.Melodic_Perfect_Parallels + dyads[index].interval.toString(), colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + "\n";
+              }
+            }
+            if (counterpointRestrictions.Direct_Fifths) {
+              if (dyads[index].interval.size == 5 &&
+                dyads[index - 1].interval.size == 5 &&
+                dyads[index].interval.quality != dyads[index - 1].interval.quality &&
+                motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
+                error.annotate(errorMessage.Direct_Fifths, colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Consecutive 5ths in same direction\n";
+              }
+            }
+            if (counterpointRestrictions.Hidden_Parallels) {
+              if (dyads[index].newBot && dyads[index].interval.isPerfect() &&
+                dyads[index - 1].interval.isPerfect() &&
+                dyads[index].interval.size == dyads[index - 1].interval.size &&
+                motion(dyads[index], dyads[index - 1]) == tonalMotion.CONTRARY) {
+                error.annotate(errorMessage.Hidden_Parallels + dyads[index].interval.toString(), colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Hidden " + dyads[index].interval.toString() + "\n";
+              }
+            }
+            if (counterpointRestrictions.Leap_To_Similar_Perfect) {
+              if (dyads[index].interval.isPerfect()) {
+                var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
+                if (motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR &&
+                  melodicInterval.size > 2) {
+                  error.annotate(errorMessage.Leap_To_Similar_Perfect, colorError);
+                  errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps to " + dyads[index].interval.toString() + " in similar motion\n";
+                }
+              }
+            }
+
+            if (counterpointRestrictions.Leap_From_Dissonance) {
+              if (dyads[index - 1].isDissonant()) {
+                var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
+                if (melodicInterval.size > 2) {
+                  error.annotate(errorMessage.Leap_From_Dissonance, colorError);
+                  errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps from NCT or dissonant interval " + dyads[index - 1].interval.toString() + "\n";
+                }
+              }
+            }
+
+            if (counterpointRestrictions.Leap_To_Dissonance) {
+              if (dyads[index].isDissonant()) {
+                var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+                if (melodicInterval.size > 2) {
+                  error.annotate(errorMessage.Leap_To_Dissonance, colorError);
+                  errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps to NCT or dissonant interval " + dyads[index].interval.toString() + "\n";
+                }
+              }
+            }
+
+            if (counterpointRestrictions.Repeated_Offbeat) {
+              if (dyads[index].topNote && dyads[index - 1].topNote &&
+                dyads[index].botNote && !dyads[index].newBot &&
+                dyads[index].topNote.pitch == dyads[index - 1].topNote.pitch &&
+                dyads[index].topNote.tpc == dyads[index - 1].topNote.tpc) {
+                error.annotate(errorMessage.Repeated_Offbeat, colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Offbeat melody note repeats\n";
+              }
+            }
+
+            if (counterpointRestrictions.Repeated_Note_Over_Barline) {
+              if (dyads[index].topNote && dyads[index - 1].topNote &&
+                dyads[index].botNote && dyads[index].newBot &&
+                dyads[index].topNote.pitch == dyads[index - 1].topNote.pitch &&
+                dyads[index].topNote.tpc == dyads[index - 1].topNote.tpc &&
+                !dyads[index].permittedDissonance) {
+                error.annotate(errorMessage.Repeated_Note_Over_Barline, colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody note repeats over bass change\n";
+              }
+            }
+
+            if (dyads[index - 1].isVchord() && dyads[index].isIchord()) {
+              if (counterpointRestrictions.V7_Resolution && dyads[index - 1].topNote.sd == 4 && dyads[index].topNote.sd != 3) {
+                error.annotate(errorMessage.V7_Resolution, colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Seventh of V7 must resolve down by step\n";
+              } else if (dyads[index - 1].topNote.sd == 7 && dyads[index].topNote.sd != 1 && dyads[index].topNote.sd != dyads[index - 1].topNote.sd) {
+                error.annotate(errorMessage.V7_Resolution, colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone in V-I must resolve up to tonic\n";
+              }
+            }
+
+            if (counterpointRestrictions.Cadence_raised_LT && index <= dyads.length - 2 &&
+              dyads[index].isVchord() && dyads[index + 1].isIchord() && mode == "Minor" &&
+              dyads[index].topNote.sd == 7 && !dyads[index].topNote.accidental) {
+              error.annotate(errorMessage.Cadence_raised_LT, colorError);
+              errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone needs to be raised at cadence\n";
+            }
+
+            if (counterpointRestrictions.Step_Back_After_Leap && index > 1) {
+              if (!stepsBackAfterBigLeap(dyads[index - 2].topNote, dyads[index - 1].topNote, dyads[index].topNote)) {
+                error.annotate(errorMessage.Step_Back_After_Leap, colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody should step back in opposite direction after a large leap\n";
+              }
+            }
+
+            if (counterpointRestrictions.Max_Consecutive_36 && index > counterpointRestrictions.Max_Consecutive_36 - 1) {
+              var testSize = dyads[index].interval.size;
+              if (testSize == 3 || testSize == 6) {
+                var tooManyConsecutive = true;
+                for (var count = 1; count < counterpointRestrictions.Max_Consecutive_36 + 1; count++) {
+                  if (dyads[index - count].interval.size != testSize) {
+                    tooManyConsecutive = false;
+                    break;
+                  }
+                }
+                if (tooManyConsecutive) {
+                  error.annotate(testSize, colorError);
+                  errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Too many consecutive " + testSize + "\n";
+                }
+              }
+            }
+          } // index > 0
+          cursor.next();
+        }
+        var perfectCount = 0;
+        var leapCount = 0;
+        var pitchSum = 0;
+        var pitchMean;
+        var numNotes = 0;
+        for (index = 0; index < dyads.length; index++) {
+          if (dyads[index].interval == intervalQual.PERFECT) perfectCount++;
+          if (dyads[index].topNote) {
+            pitchSum += dyads[index].topNote.pitch;
+            numNotes++;
+          }
+          if (index > 0) {
+            var leapCheck = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+            if (leapCheck.size > 2) leapCount++;
           }
         }
-      } // index > 0
-      cursor.next();
-    }
-    var perfectCount = 0;
-    var leapCount = 0;
-    var pitchSum = 0;
-    var pitchMean;
-    var numNotes = 0;
-    for (index = 0; index < dyads.length; index++) {
-      if (dyads[index].interval == intervalQual.PERFECT) perfectCount++;
-      if (dyads[index].topNote) {
-        pitchSum += dyads[index].topNote.pitch;
-        numNotes++;
-      }
-      if (index > 0) {
-        var leapCheck = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-        if (leapCheck.size > 2) leapCount++;
-      }
-    }
-    pitchMean = pitchSum * 1.0 / numNotes;
-    var sumSquares = 0;
-    for (index = 0; index < dyads.length; index++) {
-      if (dyads[index].topNote) {
-        var pitchdiff = dyads[index].topNote.pitch - pitchMean;
-        sumSquares += (pitchdiff * pitchdiff);
-      }
-    }
-    var pitchDeviation = Math.sqrt(sumSquares / (numNotes - 1));
+        pitchMean = pitchSum * 1.0 / numNotes;
+        var sumSquares = 0;
+        for (index = 0; index < dyads.length; index++) {
+          if (dyads[index].topNote) {
+            var pitchdiff = dyads[index].topNote.pitch - pitchMean;
+            sumSquares += (pitchdiff * pitchdiff);
+          }
+        }
+        var pitchDeviation = Math.sqrt(sumSquares / (numNotes - 1));
 
-    if (leapCount * 100.0 / (dyads.length - 1) > counterpointRestrictions.Max_Leaps) {
-      errorDetails.text = errorDetails.text + "Melody has more than " + counterpointRestrictions.Max_Leaps + "% leaps\n";
+        if (leapCount * 100.0 / (dyads.length - 1) > counterpointRestrictions.Max_Leaps) {
+          errorDetails.text = errorDetails.text + "Melody has more than " + counterpointRestrictions.Max_Leaps + "% leaps\n";
+        }
+        if (perfectCount * 100.0 / dyads.length > counterpointRestrictions.Max_Perfect) {
+          errorDetails.text = errorDetails.text + "Melody has more than " + counterpointRestrictions.Max_Perfect + "% perfect intervals\n";
+        }
+        if (pitchDeviation < counterpointRestrictions.Min_Std_Dev) {
+          errorDetails.text = errorDetails.text + "Melody should have larger range";
+        }
+
+        errorDetails.visible = true;
+        Qt.quit();
+      }
     }
-    if (perfectCount * 100.0 / dyads.length > counterpointRestrictions.Max_Perfect) {
-      errorDetails.text = errorDetails.text + "Melody has more than " + counterpointRestrictions.Max_Perfect + "% perfect intervals\n";
-    }
-    if (pitchDeviation < counterpointRestrictions.Min_Std_Dev) {
-      errorDetails.text = errorDetails.text + "Melody should have larger range";
-    }
-    errorDetails.visible = true;Qt.quit();
-  }
-}

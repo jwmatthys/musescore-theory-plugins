@@ -376,7 +376,7 @@ MuseScore {
 
   function stepsBackAfterBigLeap(note1, note2, note3) {
     var int1 = new cInterval(note1, note2);
-    if (int1.size == 6 || int1.size == 8) {
+    if (int1.size == 5 || int1.size == 6 || int1.size == 8) {
       if (note1.pitch - note2.pitch == 0) return true;
       if ((note1.pitch - note2.pitch) * (note2.pitch - note3.pitch) > 0) return false; // direction check
       var int2 = new cInterval(note2, note3);
