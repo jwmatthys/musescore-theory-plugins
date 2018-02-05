@@ -26,7 +26,7 @@ MuseScore {
     Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Downward_Appoggiatura - DONE
     Melodic_Aug_Or_Dim: true, // DONE
     Melodic_Seventh: true, // DONE
-    Offbeat: true, // no offbeats, ie first species - DONE
+    Offbeat: false, // no offbeats, ie first species - DONE
     Doubled_LT: false, // DONE
     Cadence_raised_LT: false, // DONE
     Cadence_LT_Resolution: false, // DONE
