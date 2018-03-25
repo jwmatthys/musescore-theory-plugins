@@ -11,6 +11,8 @@ MuseScore {
   var mode: "Major";
   property
   var key: 14;
+  property
+  var resolveAllLTs: true;
 
   // it pains me to use all caps for these roman numerals but
   // the scale degrees are the same anyway.
@@ -61,6 +63,14 @@ MuseScore {
     3: "A-T",
     4: "S-T",
     5: "S-A"
+  });
+
+  property
+  var individualVoice: Object.freeze({
+    0: "bass",
+    1: "tenor",
+    2: "alto",
+    3: "soprano",
   });
 
   property
@@ -196,7 +206,16 @@ MuseScore {
 
   function getChord(segment, measure) {
     this.segment = segment; // type Cursor.SEGMENT
-    this.permittedDissonance = false;
+
+    this.errorCount = 0;
+    this.errorText = "";
+    this.longErrorText = "";
+
+    this.addError = function(meas, shortError, longError) {
+      this.errorCount++;
+      this.errorText += shortError + "\n";
+      this.longErrorText += "m. " + meas + ": " + longError + "\n";
+    }
 
     this.getNote = function(elem) {
       var result = null;
@@ -262,6 +281,11 @@ MuseScore {
     this.satb = [this.bass, this.tenor, this.alto, this.soprano];
     this.satb.sd = [this.bass.sd, this.tenor.sd, this.alto.sd, this.soprano.sd];
     this.satb.pitch = [this.bass.pitch, this.tenor.pitch, this.alto.pitch, this.soprano.pitch];
+
+    if (this.soprano.pitch > 80 || this.soprano.pitch < 60) this.addError(this.measure, "S range", "soprano out of range");
+    if (this.alto.pitch > 75 || this.alto.pitch < 55) this.addError(this.measure, "A range", "alto out of range");
+    if (this.tenor.pitch > 68 || this.tenor.pitch < 48) this.addError(this.measure, "T range", "tenor out of range");
+    if (this.bass.pitch > 60 || this.bass.pitch < 40) this.addError(this.measure, "B range", "bass out of range");
 
     this.checkVoiceCrossing = function() {
       if (this.alto.pitch > this.soprano.pitch) return true;
@@ -334,6 +358,7 @@ MuseScore {
     }
     this.LTneedsResolving = null;
     this.seventhNeedsResolving = null;
+    this.dim5dim7NeedsResolving = null;
     this.missingSeventh = false;
     if (this.chordTones) {
       this.hasRoot = (this.satb.sd.indexOf(this.chordTones[0]) >= 0);
@@ -346,25 +371,15 @@ MuseScore {
         for (var a3 = 0; a3 < 4; a3++)
           if (this.satb[a3].sd == 7) this.LTneedsResolving = a3;
       }
-      if (this.seventhChord) {
-        if (this.romanNumeral == "V7") {
-          for (var a4 = 0; a4 < 4; a4++)
-            if (this.satb[a4].sd == this.chordTones[3]) this.seventhNeedsResolving = a4;
-        } else
-        if (this.romanNumeral == "VIIO7") {
-          for (var a4 = 0; a4 < 4; a4++)
-            if (this.satb[a4].sd == this.chordTones[2]) this.seventhNeedsResolving = a4;
-        }
+      if (this.romanNumeral == "V7" || this.romanNumeral == "VIIO7") {
+        for (var a4 = 0; a4 < 4; a4++)
+          if (this.romanNumeral == "V7" && (this.satb[a4].sd == this.chordTones[3])) this.seventhNeedsResolving = a4;
+          else if (this.romanNumeral == "VIIO7" && (this.satb[a4].sd == this.chordTones[2])) this.seventhNeedsResolving = a4;
       }
-    }
-    this.errorCount = 0;
-    this.errorText = "";
-    this.longErrorText = "";
-
-    this.addError = function(meas, shortError, longError) {
-      this.errorCount++;
-      this.errorText += shortError + "\n";
-      this.longErrorText += "m. " + meas + ": " + longError + "\n";
+      if (this.romanNumeral == "VIIO" || this.romanNumeral == "VIIO7") {
+        for (var a5 = 0; a5 < 4; a5++)
+          if (this.satb[a5].sd == this.chordTones[3]) this.dim7NeedsResolving = a5;
+      }
     }
 
     this.createErrorText = function(cursor) {
@@ -427,11 +442,18 @@ MuseScore {
           }
           if (tetrachords[index - 1].LTneedsResolving) {
             var resolution = tetrachords[index].satb[tetrachords[index - 1].LTneedsResolving].sd;
-            if (resolution != 1) tetrachords[index].addError(measure, "LT resolution", "Leading tone doesn't resolve up to tonic.");
+            var whichVoice = individualVoice[tetrachords[index - 1].LTneedsResolving];
+            if (resolution != 1 && (whichVoice == "soprano" || resolveAllLTs)) tetrachords[index].addError(measure, "LT res", whichVoice + ": leading tone needs to resolve up to tonic");
           }
           if (tetrachords[index - 1].seventhNeedsResolving) {
             var resolution = tetrachords[index].satb[tetrachords[index - 1].seventhNeedsResolving].sd;
-            if (resolution != 3) tetrachords[index].addError(measure, "7th resolution", "Tendency tone in " + tetrachords[index - 1].romanText + " chord needs to resolve down.");
+            var whichVoice = individualVoice[tetrachords[index - 1].seventhNeedsResolving];
+            if (resolution != 3) tetrachords[index].addError(measure, "tendency res", whichVoice + ": tendency tone in " + tetrachords[index - 1].romanText + " chord needs to resolve down");
+          }
+          if (tetrachords[index - 1].dim7NeedsResolving) {
+            var resolution = tetrachords[index].satb[tetrachords[index - 1].dim7NeedsResolving].sd;
+            var whichVoice = individualVoice[tetrachords[index - 1].dim7NeedsResolving];
+            if (resolution != 5) tetrachords[index].addError(measure, "d7 res", whichVoice + ": seventh of " + tetrachords[index - 1].romanText + " chord needs to resolve down");
           }
         }
         tetrachords[index].createErrorText(cursor);
