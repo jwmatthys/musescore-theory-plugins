@@ -425,6 +425,8 @@ MuseScore {
     var cursor = curScore.newCursor();
     if (curScore.poet.toUpperCase() == "MINOR") {
       mode = "Minor";
+    } else if (curScore.poet.toUpperCase() == "MODAL") {
+      mode = "Modal";
     }
     cursor.rewind(0);
     key = cursor.keySignature + 14;
@@ -466,7 +468,7 @@ MuseScore {
       // Here come the verticality error checks!
       var error = new counterpointError(cursor, dyads[index]);
 
-      if (counterpointRestrictions.Perfect_First_And_Last) {
+      if (counterpointRestrictions.Perfect_First_And_Last && mode == "Modal") {
         if (index == 0 && dyads[index].topNote && !dyads[index].interval.isPerfect()) {
           error.annotate(errorMessage.Perfect_First_And_Last, colorError);
           errorDetails.text += "Measure " + dyads[index].measure + ": Must begin on perfect consonance\n";
