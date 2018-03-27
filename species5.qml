@@ -299,12 +299,13 @@ MuseScore {
         else this.consonances = inversion.ROOT;
       } else this.fb = this.prevFB;
       if (this.fb && this.fb.type == Element.FIGURED_BASS) {
-        if (this.fb.text == "6" || this.fb.text == "6\n3") this.consonances = inversion.FIRSTINV;
-        if (this.fb.text == "6\n4") this.consonances = inversion.SECONDINV;
-        if (this.fb.text == "7" || this.fb.text == "7\n5\n3") this.consonances = inversion.ROOT7
-        if (this.fb.text == "6\n5" || this.fb.text == "6\n5\n3") this.consonances = inversion.FIRSTINV7;
-        if (this.fb.text == "4\n3" || this.fb.text == "6\n4\n3") this.consonances = inversion.SECONDINV7;
-        if (this.fb.text == "4\n2" || this.fb.text == "6\n4\n2") this.consonances = inversion.THIRDINV7;
+        var cleanedFBtext = this.fb.text.replace(/[^234567]/g, '');
+        if (cleanedFBtext == "6" || cleanedFBtext == "63") this.consonances = inversion.FIRSTINV;
+        if (cleanedFBtext == "64") this.consonances = inversion.SECONDINV;
+        if (cleanedFBtext == "7" || cleanedFBtext == "753") this.consonances = inversion.ROOT7
+        if (cleanedFBtext == "65" || cleanedFBtext == "653") this.consonances = inversion.FIRSTINV7;
+        if (cleanedFBtext == "43" || cleanedFBtext == "643") this.consonances = inversion.SECONDINV7;
+        if (cleanedFBtext == "42" || cleanedFBtext == "642") this.consonances = inversion.THIRDINV7;
       }
     }
 
