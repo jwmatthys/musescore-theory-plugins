@@ -246,6 +246,7 @@ MuseScore {
     this.alto = null;
     this.tenor = null;
     this.bass = null;
+    this.all4voices = false;
     this.hasRoot = null;
     this.hasThird = null;
     this.voiceCross = null;
@@ -255,156 +256,159 @@ MuseScore {
     this.bassLayer1 = this.getNote(this.segment.elementAt(4));
     this.bassLayer2 = this.getNote(this.segment.elementAt(5));
 
-    if (this.trebleLayer1.length > 1) {
+    if (this.trebleLayer1 && this.trebleLayer1.length > 1) {
       this.soprano = this.trebleLayer1[this.trebleLayer1.length - 1];
       this.alto = this.trebleLayer1[this.trebleLayer1.length - 2];
-    } else {
+    } else if (this.trebleLayer1 && this.trebleLayer2) {
       this.soprano = this.trebleLayer1[this.trebleLayer1.length - 1];
       this.alto = this.trebleLayer2[this.trebleLayer2.length - 1];
     }
 
-    if (this.bassLayer1.length > 1) {
+    if (this.bassLayer1 && this.bassLayer1.length > 1) {
       this.tenor = this.bassLayer1[this.bassLayer1.length - 1];
       this.bass = this.bassLayer1[this.bassLayer1.length - 2];
-    } else {
+    } else if (this.bassLayer1 && this.bassLayer2) {
       this.tenor = this.bassLayer1[this.bassLayer1.length - 1];
       if (this.bassLayer2) this.bass = this.bassLayer2[this.bassLayer2.length - 1];
     }
-    if (this.trebleLayer1.length > 2) { // keyboard style
+    if (this.trebleLayer1 && this.bassLayer1 && this.trebleLayer1.length > 2) { // keyboard style
       this.tenor = this.trebleLayer1[this.trebleLayer1.length - 3];
       this.bass = this.bassLayer1[this.bassLayer1.length - 1];
     }
 
-    this.soprano.sd = this.getScaleDegree(this.soprano);
-    this.alto.sd = this.getScaleDegree(this.alto);
-    this.tenor.sd = this.getScaleDegree(this.tenor);
-    this.bass.sd = this.getScaleDegree(this.bass);
-    this.satb = [this.bass, this.tenor, this.alto, this.soprano];
-    this.satb.sd = [this.bass.sd, this.tenor.sd, this.alto.sd, this.soprano.sd];
-    this.satb.pitch = [this.bass.pitch, this.tenor.pitch, this.alto.pitch, this.soprano.pitch];
+    this.all4voices = (this.soprano && this.alto && this.tenor && this.bass);
+    if (this.all4voices) {
+      this.soprano.sd = this.getScaleDegree(this.soprano);
+      this.alto.sd = this.getScaleDegree(this.alto);
+      this.tenor.sd = this.getScaleDegree(this.tenor);
+      this.bass.sd = this.getScaleDegree(this.bass);
+      this.satb = [this.bass, this.tenor, this.alto, this.soprano];
+      this.satb.sd = [this.bass.sd, this.tenor.sd, this.alto.sd, this.soprano.sd];
+      this.satb.pitch = [this.bass.pitch, this.tenor.pitch, this.alto.pitch, this.soprano.pitch];
 
-    if (this.soprano.pitch > 80 || this.soprano.pitch < 60) this.addError(this.measure, "S range", "soprano out of range");
-    if (this.alto.pitch > 75 || this.alto.pitch < 55) this.addError(this.measure, "A range", "alto out of range");
-    if (this.tenor.pitch > 68 || this.tenor.pitch < 48) this.addError(this.measure, "T range", "tenor out of range");
-    if (this.bass.pitch > 60 || this.bass.pitch < 40) this.addError(this.measure, "B range", "bass out of range");
+      if (this.soprano.pitch > 80 || this.soprano.pitch < 60) this.addError(this.measure, "S range", "soprano out of range");
+      if (this.alto.pitch > 75 || this.alto.pitch < 55) this.addError(this.measure, "A range", "alto out of range");
+      if (this.tenor.pitch > 68 || this.tenor.pitch < 48) this.addError(this.measure, "T range", "tenor out of range");
+      if (this.bass.pitch > 60 || this.bass.pitch < 40) this.addError(this.measure, "B range", "bass out of range");
 
-    this.checkVoiceCrossing = function() {
-      if (this.alto.pitch > this.soprano.pitch) return true;
-      if (this.tenor.pitch > this.alto.pitch) return true;
-      if (this.bass.pitch > this.tenor.pitch) return true;
-      return false;
-    }
-
-    this.checkSpacing = function() {
-      if (this.soprano.pitch - this.alto.pitch > 12) return true;
-      if (this.alto.pitch - this.tenor.pitch > 12) return true;
-      return false;
-    }
-
-    this.checkNotes = function() {
-      var result = 0;
-      for (var i = 0; i < 4; i++) {
-        if (this.chordTones.indexOf(this.satb[i].sd) < 0) result++;
+      this.checkVoiceCrossing = function() {
+        if (this.alto.pitch > this.soprano.pitch) return true;
+        if (this.tenor.pitch > this.alto.pitch) return true;
+        if (this.bass.pitch > this.tenor.pitch) return true;
+        return false;
       }
-      return result;
-    }
 
-    this.checkDoubledLT = function() {
-      var result = 0;
-      for (var i = 0; i < 4; i++) {
-        if (this.satb[i].sd == 7) result++;
+      this.checkSpacing = function() {
+        if (this.soprano.pitch - this.alto.pitch > 12) return true;
+        if (this.alto.pitch - this.tenor.pitch > 12) return true;
+        return false;
       }
-      return result;
-    }
 
-    this.voiceCross = this.checkVoiceCrossing();
-    this.spacingError = this.checkSpacing();
-    this.doubledLT = this.checkDoubledLT();
+      this.checkNotes = function() {
+        var result = 0;
+        for (var i = 0; i < 4; i++) {
+          if (this.chordTones.indexOf(this.satb[i].sd) < 0) result++;
+        }
+        return result;
+      }
 
-    this.getRoman = function() {
-      var sArray = new Array();
-      for (var i = 4; i < 6; i++) {
-        if (segment.elementAt(i) && segment.elementAt(i).lyrics) {
-          var lyrics = segment.elementAt(i).lyrics;
-          for (var j = 0; j < lyrics.length; j++) {
-            var l = lyrics[j];
-            if (!l)
-              continue;
-            if (sArray[j] == undefined)
-              sArray[j] = "";
-            if (l.syllabic == Lyrics.SINGLE || l.syllabic == Lyrics.END)
-              sArray[j] += l.text + " ";
-            if (l.syllabic == Lyrics.MIDDLE || l.syllabic == Lyrics.BEGIN)
-              sArray[j] += l.text;
+      this.checkDoubledLT = function() {
+        var result = 0;
+        for (var i = 0; i < 4; i++) {
+          if (this.satb[i].sd == 7) result++;
+        }
+        return result;
+      }
+
+      this.voiceCross = this.checkVoiceCrossing();
+      this.spacingError = this.checkSpacing();
+      this.doubledLT = this.checkDoubledLT();
+
+      this.getRoman = function() {
+        var sArray = new Array();
+        for (var i = 4; i < 6; i++) {
+          if (segment.elementAt(i) && segment.elementAt(i).lyrics) {
+            var lyrics = segment.elementAt(i).lyrics;
+            for (var j = 0; j < lyrics.length; j++) {
+              var l = lyrics[j];
+              if (!l)
+                continue;
+              if (sArray[j] == undefined)
+                sArray[j] = "";
+              if (l.syllabic == Lyrics.SINGLE || l.syllabic == Lyrics.END)
+                sArray[j] += l.text + " ";
+              if (l.syllabic == Lyrics.MIDDLE || l.syllabic == Lyrics.BEGIN)
+                sArray[j] += l.text;
+            }
+          }
+        }
+        return sArray.toString();
+      }
+
+      this.romanText = this.getRoman().replace(/[^IiVvoCad]/g, '');
+      this.romanNumeral = this.romanText.toUpperCase();
+      this.figuredBass = this.getRoman().replace(/[^234567]/g, '');
+      this.inversion = inversions[this.figuredBass][0];
+      this.seventhChord = inversions[this.figuredBass][1];
+      if (this.seventhChord) this.romanNumeral += "7";
+      this.chordTones = chordTones[this.romanNumeral];
+      this.intervals = [];
+      for (var a1 = 0; a1 < 4; a1++) {
+        for (var a2 = a1; a2 < 4; a2++) {
+          if (a1 != a2) {
+            this.intervals.push(new checkInterval(this.satb[a1], this.satb[a2]));
           }
         }
       }
-      return sArray.toString();
-    }
-
-    this.romanText = this.getRoman().replace(/[^IiVvoCad]/g, '');
-    this.romanNumeral = this.romanText.toUpperCase();
-    this.figuredBass = this.getRoman().replace(/[^234567]/g, '');
-    this.inversion = inversions[this.figuredBass][0];
-    this.seventhChord = inversions[this.figuredBass][1];
-    if (this.seventhChord) this.romanNumeral += "7";
-    this.chordTones = chordTones[this.romanNumeral];
-    this.intervals = [];
-    for (var a1 = 0; a1 < 4; a1++) {
-      for (var a2 = a1; a2 < 4; a2++) {
-        if (a1 != a2) {
-          this.intervals.push(new checkInterval(this.satb[a1], this.satb[a2]));
+      this.LTneedsResolving = null;
+      this.seventhNeedsResolving = null;
+      this.dim5dim7NeedsResolving = null;
+      this.missingSeventh = false;
+      if (this.chordTones) {
+        this.hasRoot = (this.satb.sd.indexOf(this.chordTones[0]) >= 0);
+        this.hasThird = (this.satb.sd.indexOf(this.chordTones[1]) >= 0);
+        this.hasFifth = (this.satb.sd.indexOf(this.chordTones[2]) >= 0);
+        if (this.seventhChord) this.missingSeventh = !(this.satb.sd.indexOf(this.chordTones[3]) >= 0);
+        this.wrongInversion = this.bass.sd != this.chordTones[this.inversion];
+        this.wrongNote = this.checkNotes();
+        if (this.romanNumeral == "V" || this.romanNumeral == "V7" || this.romanNumeral == "VIIO" || this.romanNumeral == "VIIO7") {
+          for (var a3 = 0; a3 < 4; a3++)
+            if (this.satb[a3].sd == 7) this.LTneedsResolving = a3;
+        }
+        if (this.romanNumeral == "V7" || this.romanNumeral == "VIIO7") {
+          for (var a4 = 0; a4 < 4; a4++)
+            if (this.romanNumeral == "V7" && (this.satb[a4].sd == this.chordTones[3])) this.seventhNeedsResolving = a4;
+            else if (this.romanNumeral == "VIIO7" && (this.satb[a4].sd == this.chordTones[2])) this.seventhNeedsResolving = a4;
+        }
+        if (this.romanNumeral == "VIIO" || this.romanNumeral == "VIIO7") {
+          for (var a5 = 0; a5 < 4; a5++)
+            if (this.satb[a5].sd == this.chordTones[3]) this.dim7NeedsResolving = a5;
         }
       }
-    }
-    this.LTneedsResolving = null;
-    this.seventhNeedsResolving = null;
-    this.dim5dim7NeedsResolving = null;
-    this.missingSeventh = false;
-    if (this.chordTones) {
-      this.hasRoot = (this.satb.sd.indexOf(this.chordTones[0]) >= 0);
-      this.hasThird = (this.satb.sd.indexOf(this.chordTones[1]) >= 0);
-      this.hasFifth = (this.satb.sd.indexOf(this.chordTones[2]) >= 0);
-      if (this.seventhChord) this.missingSeventh = !(this.satb.sd.indexOf(this.chordTones[3]) >= 0);
-      this.wrongInversion = this.bass.sd != this.chordTones[this.inversion];
-      this.wrongNote = this.checkNotes();
-      if (this.romanNumeral == "V" || this.romanNumeral == "V7" || this.romanNumeral == "VIIO" || this.romanNumeral == "VIIO7") {
-        for (var a3 = 0; a3 < 4; a3++)
-          if (this.satb[a3].sd == 7) this.LTneedsResolving = a3;
-      }
-      if (this.romanNumeral == "V7" || this.romanNumeral == "VIIO7") {
-        for (var a4 = 0; a4 < 4; a4++)
-          if (this.romanNumeral == "V7" && (this.satb[a4].sd == this.chordTones[3])) this.seventhNeedsResolving = a4;
-          else if (this.romanNumeral == "VIIO7" && (this.satb[a4].sd == this.chordTones[2])) this.seventhNeedsResolving = a4;
-      }
-      if (this.romanNumeral == "VIIO" || this.romanNumeral == "VIIO7") {
-        for (var a5 = 0; a5 < 4; a5++)
-          if (this.satb[a5].sd == this.chordTones[3]) this.dim7NeedsResolving = a5;
-      }
-    }
 
-    this.createErrorText = function(cursor) {
-      if (this.wrongNote) {
-        if (this.wrongNote == 1) this.addError(this.measure, this.wrongNote + " note err", "one note error");
-        else this.addError(this.measure, this.wrongNote + " note err", this.wrongNote + " wrong notes");
-      }
-      if (this.wrongNote <= 2) {
-        if (this.wrongInversion) this.addError(this.measure, "inv", "incorrect bass note for inversion");
-        if (!this.hasRoot) this.addError(this.measure, "no root", "chord is missing root");
-        if (!this.hasThird) this.addError(this.measure, "no 3rd", "chord is missing third");
-        if (this.inversion > 0 && !this.hasFifth) this.addError(this.measure, "no 5", "warning: chord is in inversion and is missing fifth");
-        if (this.missingSeventh) this.addError(this.measure, "no 7th", "chord is missing seventh");
-        if (this.voiceCross) this.addError(this.measure, "X", "voice crossing");
-        if (this.spacingError) this.addError(this.measure, "sp", "spacing greater than an octave in upper voices");
-        if (this.doubledLT > 1) this.addError(this.measure, "LTx" + this.doubledLT, "doubled leading tone");
-      }
+      this.createErrorText = function(cursor) {
+        if (this.wrongNote) {
+          if (this.wrongNote == 1) this.addError(this.measure, this.wrongNote + " note err", "one note error");
+          else this.addError(this.measure, this.wrongNote + " note err", this.wrongNote + " wrong notes");
+        }
+        if (this.wrongNote <= 2) {
+          if (this.wrongInversion) this.addError(this.measure, "inv", "incorrect bass note for inversion");
+          if (!this.hasRoot) this.addError(this.measure, "no root", "chord is missing root");
+          if (!this.hasThird) this.addError(this.measure, "no 3rd", "chord is missing third");
+          if (this.inversion > 0 && !this.hasFifth) this.addError(this.measure, "no 5", "warning: chord is in inversion and is missing fifth");
+          if (this.missingSeventh) this.addError(this.measure, "no 7th", "chord is missing seventh");
+          if (this.voiceCross) this.addError(this.measure, "X", "voice crossing");
+          if (this.spacingError) this.addError(this.measure, "sp", "spacing greater than an octave in upper voices");
+          if (this.doubledLT > 1) this.addError(this.measure, "LTx" + this.doubledLT, "doubled leading tone");
+        }
 
-      var text = newElement(Element.STAFF_TEXT);
-      text.pos.y = -2.5 * (this.errorCount - 1);
-      text.pos.x = 0;
-      text.text = this.errorText;
-      text.color = colorError;
-      cursor.add(text);
+        var text = newElement(Element.STAFF_TEXT);
+        text.pos.y = -2.5 * (this.errorCount - 1);
+        text.pos.x = 0;
+        text.text = this.errorText;
+        text.color = colorError;
+        cursor.add(text);
+      }
     }
   }
 
@@ -432,34 +436,37 @@ MuseScore {
       if ((treble && treble.type == Element.CHORD) || (bass && bass.type == Element.CHORD)) {
         tetrachords[index] = new getChord(segment, measure); // This is where the magic happens...
         //errorDetails.text += tetrachords[index].romanText + ", " + tetrachords[index].romanNumeral + "," + tetrachords[index].inversion + ", " + tetrachords[index].seventhChord + "\n";
-        if (index > 0) { // check with parallels starting with second chord
-          for (var a = 0; a < 6; a++) {
-            var currentInterval = tetrachords[index].intervals[a];
-            var lastInterval = tetrachords[index - 1].intervals[a];
-            var oblique = (tetrachords[index].intervals[a].note1.pitch == tetrachords[index - 1].intervals[a].note1.pitch);
-            if (currentInterval.toString() == lastInterval.toString() && currentInterval.isPerfect() && !oblique) {
-              tetrachords[index].addError(measure, "||" + currentInterval.toString(), "parallel " + currentInterval.toString() + " in " + voices[a]);
+        var all4voices = tetrachords[index].all4voices;
+        if (all4voices) {
+          if (index > 0) { // check with parallels starting with second chord
+            for (var a = 0; a < 6; a++) {
+              var currentInterval = tetrachords[index].intervals[a];
+              var lastInterval = tetrachords[index - 1].intervals[a];
+              var oblique = (tetrachords[index].intervals[a].note1.pitch == tetrachords[index - 1].intervals[a].note1.pitch);
+              if (currentInterval.toString() == lastInterval.toString() && currentInterval.isPerfect() && !oblique) {
+                tetrachords[index].addError(measure, "||" + currentInterval.toString(), "parallel " + currentInterval.toString() + " in " + voices[a]);
+              }
+            }
+            if (tetrachords[index - 1].LTneedsResolving) {
+              var resolution = tetrachords[index].satb[tetrachords[index - 1].LTneedsResolving].sd;
+              var whichVoice = individualVoice[tetrachords[index - 1].LTneedsResolving];
+              if (resolution != 1 && (whichVoice == "soprano" || resolveAllLTs)) tetrachords[index].addError(measure, "LT res", whichVoice + ": leading tone needs to resolve up to tonic");
+            }
+            if (tetrachords[index - 1].seventhNeedsResolving) {
+              var resolution = tetrachords[index].satb[tetrachords[index - 1].seventhNeedsResolving].sd;
+              var whichVoice = individualVoice[tetrachords[index - 1].seventhNeedsResolving];
+              if (resolution != 3) tetrachords[index].addError(measure, "tendency res", whichVoice + ": tendency tone in " + tetrachords[index - 1].romanText + " chord needs to resolve down");
+            }
+            if (tetrachords[index - 1].dim7NeedsResolving) {
+              var resolution = tetrachords[index].satb[tetrachords[index - 1].dim7NeedsResolving].sd;
+              var whichVoice = individualVoice[tetrachords[index - 1].dim7NeedsResolving];
+              if (resolution != 5) tetrachords[index].addError(measure, "d7 res", whichVoice + ": seventh of " + tetrachords[index - 1].romanText + " chord needs to resolve down");
             }
           }
-          if (tetrachords[index - 1].LTneedsResolving) {
-            var resolution = tetrachords[index].satb[tetrachords[index - 1].LTneedsResolving].sd;
-            var whichVoice = individualVoice[tetrachords[index - 1].LTneedsResolving];
-            if (resolution != 1 && (whichVoice == "soprano" || resolveAllLTs)) tetrachords[index].addError(measure, "LT res", whichVoice + ": leading tone needs to resolve up to tonic");
-          }
-          if (tetrachords[index - 1].seventhNeedsResolving) {
-            var resolution = tetrachords[index].satb[tetrachords[index - 1].seventhNeedsResolving].sd;
-            var whichVoice = individualVoice[tetrachords[index - 1].seventhNeedsResolving];
-            if (resolution != 3) tetrachords[index].addError(measure, "tendency res", whichVoice + ": tendency tone in " + tetrachords[index - 1].romanText + " chord needs to resolve down");
-          }
-          if (tetrachords[index - 1].dim7NeedsResolving) {
-            var resolution = tetrachords[index].satb[tetrachords[index - 1].dim7NeedsResolving].sd;
-            var whichVoice = individualVoice[tetrachords[index - 1].dim7NeedsResolving];
-            if (resolution != 5) tetrachords[index].addError(measure, "d7 res", whichVoice + ": seventh of " + tetrachords[index - 1].romanText + " chord needs to resolve down");
-          }
+          tetrachords[index].createErrorText(cursor);
         }
-        tetrachords[index].createErrorText(cursor);
-        cursor.next();
-        index++;
+        if (tetrachords[index].trebleLayer1) cursor.next();
+        if (all4voices) index++;
       } else if (segment.elementAt(0) && segment.elementAt(0).type == Element.BAR_LINE) measure++;
       segment = segment.next;
     }
