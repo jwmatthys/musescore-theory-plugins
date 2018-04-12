@@ -5,7 +5,7 @@ import MuseScore 1.0
 MuseScore {
   menuPath: "Plugins.Proof Reading.SATB"
   description: "Check for Part-writing Errors in Tonal SATB Chorales"
-  version: "0.1"
+  version: "0.21"
 
   property
   var mode: "Major";
@@ -449,8 +449,9 @@ MuseScore {
             }
             if (tetrachords[index - 1].LTneedsResolving) {
               var resolution = tetrachords[index].satb[tetrachords[index - 1].LTneedsResolving].sd;
+              var isTonicOrDeceptive = (tetrachords[index].romanNumeral == "I" || tetrachords[index].romanNumeral == "VI");
               var whichVoice = individualVoice[tetrachords[index - 1].LTneedsResolving];
-              if (resolution != 1 && (whichVoice == "soprano" || resolveAllLTs)) tetrachords[index].addError(measure, "LT res", whichVoice + ": leading tone needs to resolve up to tonic");
+              if (resolution != 1 && isTonicOrDeceptive && (whichVoice == "soprano" || resolveAllLTs)) tetrachords[index].addError(measure, "LT res", whichVoice + ": leading tone needs to resolve up to tonic");
             }
             if (tetrachords[index - 1].seventhNeedsResolving) {
               var resolution = tetrachords[index].satb[tetrachords[index - 1].seventhNeedsResolving].sd;
