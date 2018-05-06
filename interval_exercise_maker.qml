@@ -5,13 +5,13 @@ import QtQuick.Layouts 1.0
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Exercises.Create Interval Worksheet"
-  version: "0.0"
-  description: "Create a practice worksheet of interval exercises"
+  menuPath: "Exercises.Create.Create Interval ID Exercises"
+  version: "0.1"
+  description: "Create a practice worksheet of interval identification exercises"
   pluginType: "dialog"
 
   id: window
-  width: 250;height: 120;
+  width: 265;height: 260;
   onRun: {}
 
   //  property
@@ -89,12 +89,12 @@ MuseScore {
     anchors.bottomMargin: 10
     Layout.fillWidth: true
     Layout.preferredHeight: 25
-    value: 5
+    value: 10
   }
 
   Text {
-    id: trebleClefCheckboxLabel
-    text: "Treble Clef"
+    id: perfectIntervalCheckboxLabel
+    text: "Perfect intervals"
     anchors.top: numProblemsLabel.bottom
     anchors.left: window.left
     anchors.leftMargin: 10
@@ -104,10 +104,10 @@ MuseScore {
   }
 
   CheckBox {
-    id: trebleClefCheckbox
+    id: perfectIntervalCheckbox
     checked: true
     anchors.top: numProblemsLabel.bottom
-    anchors.left: trebleClefCheckboxLabel.right
+    anchors.left: perfectIntervalCheckboxLabel.right
     anchors.leftMargin: 10
     anchors.rightMargin: 10
     anchors.topMargin: 10
@@ -115,10 +115,10 @@ MuseScore {
   }
 
   Text {
-    id: bassClefCheckboxLabel
-    text: "Bass Clef"
-    anchors.top: numProblemsLabel.bottom
-    anchors.left: trebleClefCheckbox.right
+    id: imperfectIntervalCheckboxLabel
+    text: "M/m intervals"
+    anchors.top: perfectIntervalCheckboxLabel.bottom
+    anchors.left: window.left
     anchors.leftMargin: 10
     anchors.rightMargin: 10
     anchors.topMargin: 10
@@ -126,14 +126,70 @@ MuseScore {
   }
 
   CheckBox {
-    id: bassClefCheckbox
-    checked: false
-    anchors.top: numProblemsLabel.bottom
-    anchors.left: bassClefCheckboxLabel.right
+    id: imperfectIntervalCheckbox
+    checked: true
+    anchors.top: perfectIntervalCheckboxLabel.bottom
+    anchors.left: imperfectIntervalCheckboxLabel.right
     anchors.leftMargin: 10
     anchors.rightMargin: 10
     anchors.topMargin: 10
     anchors.bottomMargin: 10
+  }
+
+  Text {
+    id: dimaugIntervalCheckboxLabel
+    text: "Aug/dim intervals"
+    anchors.top: imperfectIntervalCheckboxLabel.bottom
+    anchors.left: window.left
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  CheckBox {
+    id: dimaugIntervalCheckbox
+    checked: true
+    anchors.top: imperfectIntervalCheckboxLabel.bottom
+    anchors.left: dimaugIntervalCheckboxLabel.right
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  Text {
+    id: doubleDimaugIntervalCheckboxLabel
+    text: "Double Aug/dim intervals"
+    anchors.top: dimaugIntervalCheckboxLabel.bottom
+    anchors.left: window.left
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  CheckBox {
+    id: doubleDimaugIntervalCheckbox
+    checked: false
+    anchors.top: dimaugIntervalCheckboxLabel.bottom
+    anchors.left: doubleDimaugIntervalCheckboxLabel.right
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  function checkboxText(interval) {
+    // return false if the interval is permitted?
+    if (interval[0] == 'P' && perfectIntervalCheckbox.checked) return false;
+    if (interval[0] == 'm' && imperfectIntervalCheckbox.checked) return false;
+    if (interval[0] == 'M' && imperfectIntervalCheckbox.checked) return false;
+    if (interval[1] == 'd' && doubleDimaugIntervalCheckbox.checked) return false;
+    if (interval[1] == 'A' && doubleDimaugIntervalCheckbox.checked) return false;
+    if (interval[0] == 'd' && interval[1] != 'd' && dimaugIntervalCheckbox.checked) return false;
+    if (interval[0] == 'A' && interval[1] != 'A' && dimaugIntervalCheckbox.checked) return false;
+    return true;
   }
 
   function rrand_i(val1, val2) {
@@ -157,7 +213,6 @@ MuseScore {
     note.tpc1 = tpc;
     note.tpc2 = tpc;
     note.headType = NoteHead.HEAD_AUTO;
-    console.log("  created note with tpc: ", note.tpc1, " ", note.tpc2, " pitch: ", note.pitch);
     return note;
   }
 
@@ -175,26 +230,31 @@ MuseScore {
   }
 
   Button {
-    id: buttonCreateWorksheet
-    text: "Create Worksheet"
+    id: buttonCreateExercises
+    text: "Create Exercises"
     anchors.bottom: window.bottom
     anchors.left: window.left
     anchors.topMargin: 10
     anchors.bottomMargin: 10
     anchors.leftMargin: 10
     onClicked: {
+      if (!(perfectIntervalCheckbox.checked &&
+          imperfectIntervalCheckbox.checked &&
+          dimaugIntervalCheckbox.checked &&
+          doubleDimaugIntervalCheckbox.checked)) imperfectIntervalCheckbox.checked = true;
+      var subtitle = "";
+      if (perfectIntervalCheckbox.checked) subtitle += "Perf  ";
+      if (imperfectIntervalCheckbox.checked) subtitle += "|  Maj/min  ";
+      if (dimaugIntervalCheckbox.checked) subtitle += "|  dim/Aug  ";
+      if (doubleDimaugIntervalCheckbox.checked) subtitle += "|  dd/AA";
       var probs = numProblems.value;
-      var score = newScore("Interval Worksheet", "treble", probs);
+      var score = newScore("Interval Identification Exercises", "treble", probs);
       score.startCmd();
-      score.addText("title", "Interval Worksheet");
-      score.addText("subtitle", "subtitle");
+      score.addText("title", "Interval Identification Exercises");
+      score.addText("subtitle", subtitle);
 
       var cursor = score.newCursor();
       cursor.track = 0;
-
-      //var ts = newElement(Element.TIMESIG);
-      //ts.setSig(4, 4);
-      //cursor.add(ts);
 
       cursor.rewind(0);
 
@@ -210,20 +270,18 @@ MuseScore {
         if (chord.type == Element.CHORD) {
           var testnote1, testnote2, testInterval;
           do {
-            testnote1 = createNote(rrand_i(6, 27), rrand_i(4, 6));
-            testnote2 = createNote(rrand_i(6, 27), rrand_i(4, 6));
+            var oct = 4;
+            testnote1 = createNote(rrand_i(6, 27), rrand_i(oct, oct+2));
+            testnote2 = createNote(rrand_i(6, 27), rrand_i(oct, oct+2));
             testInterval = checkInterval(testnote1, testnote2);
-          } while (testInterval[1] == 'A' || testInterval[1] == 'd');
+          } while (checkboxText(testInterval));
+
           chord.add(testnote1); //add notes to the chord
           chord.add(testnote2); //add notes to the chord
           var notes = chord.notes;
           chord.remove(notes[0]);
-          //var text = newElement(Element.STAFF_TEXT);
-          //text.text = testInterval;
-          //cursor.add(text);
         }
         cursor.next();
-        //setCursorToTime(cursor, next_time);
       }
       score.doLayout();
       score.endCmd();
