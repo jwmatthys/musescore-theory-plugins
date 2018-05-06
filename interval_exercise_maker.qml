@@ -14,8 +14,14 @@ MuseScore {
   width: 265;height: 260;
   onRun: {}
 
-  //  property
-  //  var naturalPitch: [0, 2, 4, 5, 7, 9, 11];
+  property
+  var difficulty: [
+    [13, 19], // naturals only
+    [11, 21], // Eb, Bb, F#, C#
+    [9, 23], // Db - D#
+    [6, 26], // Fb - B#
+    [-1, 33] // All
+  ];
 
   function checkInterval(n1, n2) {
     var note1 = n1;
@@ -180,8 +186,35 @@ MuseScore {
     anchors.bottomMargin: 10
   }
 
+  Text {
+    id: difficultySliderText
+    text: "Difficulty"
+    anchors.top: doubleDimaugIntervalCheckboxLabel.bottom
+    anchors.left: window.left
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  Slider {
+    id: difficultySlider
+    maximumValue: 5
+    minimumValue: 1
+    stepSize: 1
+    value: 3
+    anchors.top: doubleDimaugIntervalCheckboxLabel.bottom
+    anchors.left: difficultySliderText.right
+    anchors.right: window.right
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
   function checkboxText(interval) {
     // return false if the interval is permitted?
+    if (interval == 'A1') return true; // nobody wants augmented unison!
     if (interval[0] == 'P' && perfectIntervalCheckbox.checked) return false;
     if (interval[0] == 'm' && imperfectIntervalCheckbox.checked) return false;
     if (interval[0] == 'M' && imperfectIntervalCheckbox.checked) return false;
@@ -242,8 +275,9 @@ MuseScore {
           imperfectIntervalCheckbox.checked &&
           dimaugIntervalCheckbox.checked &&
           doubleDimaugIntervalCheckbox.checked)) imperfectIntervalCheckbox.checked = true;
-      var subtitle = "";
-      if (perfectIntervalCheckbox.checked) subtitle += "Perf  ";
+      //if (doubleDimaugIntervalCheckbox.checked && difficultySlider.value < 3) doubleDimaugIntervalCheckbox.checked = false;
+      var subtitle = "Difficulty: " + difficultySlider.value + "  ";
+      if (perfectIntervalCheckbox.checked) subtitle += "|  Perf  ";
       if (imperfectIntervalCheckbox.checked) subtitle += "|  Maj/min  ";
       if (dimaugIntervalCheckbox.checked) subtitle += "|  dim/Aug  ";
       if (doubleDimaugIntervalCheckbox.checked) subtitle += "|  dd/AA";
@@ -271,8 +305,10 @@ MuseScore {
           var testnote1, testnote2, testInterval;
           do {
             var oct = 4;
-            testnote1 = createNote(rrand_i(6, 27), rrand_i(oct, oct+2));
-            testnote2 = createNote(rrand_i(6, 27), rrand_i(oct, oct+2));
+            var lowtpc = difficulty[difficultySlider.value - 1][0];
+            var hightpc = difficulty[difficultySlider.value - 1][1];
+            testnote1 = createNote(rrand_i(lowtpc, hightpc + 1), rrand_i(oct, oct + 2));
+            testnote2 = createNote(rrand_i(lowtpc, hightpc + 1), rrand_i(oct, oct + 2));
             testInterval = checkInterval(testnote1, testnote2);
           } while (checkboxText(testInterval));
 

@@ -20,9 +20,9 @@ MuseScore {
     } else if (diff >= 2 && diff <= 5) {
       quality = "M";
     } else if (diff >= 6 && diff <= 12) {
-      quality = "A";
+      quality = "+";
     } else if (diff >= 13 && diff <= 19) {
-      quality = "AA";
+      quality = "++";
     } else if (diff <= -2 && diff >= -5) {
       quality = "m";
     } else if (diff <= -6 && diff >= -12) {
