@@ -92,7 +92,7 @@ MuseScore {
         [0, -1, -4, 2, "<sup>Ø4</sup><sub>2</sub>", 3],
         [0, 3, 6, 9, "<sup>o4</sup><sub>2</sub>", 3]
       ];
-      chordID = testchord[0] + ":" + testchord[1] + ":" + testchord[2];
+      //chordID = testchord[0] + ":" + testchord[1] + ":" + testchord[2];
       for (var k = 0; k < seventhChordTPC.length; k++) {
         if (testchord[0] == seventhChordTPC[k][1] &&
           testchord[1] == seventhChordTPC[k][2] &&

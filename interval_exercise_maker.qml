@@ -302,16 +302,22 @@ MuseScore {
       for (var j = 0; j < probs; j++) {
         var chord = cursor.element; //get the chord created when 1st note was inserted
         if (chord.type == Element.CHORD) {
-          var testnote1, testnote2, testInterval;
-          do {
-            var oct = 4;
+          var testnote1, testnote2;
+          while (true) {
             var lowtpc = difficulty[difficultySlider.value - 1][0];
             var hightpc = difficulty[difficultySlider.value - 1][1];
-            testnote1 = createNote(rrand_i(lowtpc, hightpc + 1), rrand_i(oct, oct + 2));
-            testnote2 = createNote(rrand_i(lowtpc, hightpc + 1), rrand_i(oct, oct + 2));
-            testInterval = checkInterval(testnote1, testnote2);
-          } while (checkboxText(testInterval));
-
+            testnote1 = createNote(rrand_i(lowtpc, hightpc + 1), rrand_i(4, 6));
+            testnote2 = createNote(rrand_i(lowtpc, hightpc + 1), rrand_i(4, 6));
+            var testInterval = checkInterval(testnote1, testnote2);
+            if (testInterval == 'A1') continue;
+            if (testInterval[0] == 'P' && perfectIntervalCheckbox.checked) break;
+            if (testInterval[0] == 'm' && imperfectIntervalCheckbox.checked) break;
+            if (testInterval[0] == 'M' && imperfectIntervalCheckbox.checked) break;
+            if (testInterval[1] == 'd' && doubleDimaugIntervalCheckbox.checked) break;
+            if (testInterval[1] == 'A' && doubleDimaugIntervalCheckbox.checked) break;
+            if (testInterval[0] == 'd' && testInterval[1] != 'd' && dimaugIntervalCheckbox.checked) break;
+            if (testInterval[0] == 'A' && testInterval[1] != 'A' && dimaugIntervalCheckbox.checked) break;
+          }
           chord.add(testnote1); //add notes to the chord
           chord.add(testnote2); //add notes to the chord
           var notes = chord.notes;

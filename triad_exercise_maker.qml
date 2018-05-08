@@ -11,7 +11,7 @@ MuseScore {
   pluginType: "dialog"
 
   id: window
-  width: 265;height: 260;
+  width: 265;height: 280;
   onRun: {}
 
   property
@@ -95,9 +95,75 @@ MuseScore {
   }
 
   Text {
+    id: rootPositionCheckboxLabel
+    text: "Root Position"
+    anchors.top: dimAugCheckboxLabel.bottom
+    anchors.left: window.left
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  CheckBox {
+    id: rootPositionCheckbox
+    checked: true
+    anchors.top: dimAugCheckboxLabel.bottom
+    anchors.left: rootPositionCheckboxLabel.right
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  Text {
+    id: firstInversionCheckboxLabel
+    text: "First Inversion"
+    anchors.top: rootPositionCheckboxLabel.bottom
+    anchors.left: window.left
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  CheckBox {
+    id: firstInversionCheckbox
+    checked: true
+    anchors.top: rootPositionCheckboxLabel.bottom
+    anchors.left: firstInversionCheckboxLabel.right
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  Text {
+    id: secondInversionCheckboxLabel
+    text: "Second Inversion"
+    anchors.top: firstInversionCheckboxLabel.bottom
+    anchors.left: window.left
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  CheckBox {
+    id: secondInversionCheckbox
+    checked: true
+    anchors.top: firstInversionCheckboxLabel.bottom
+    anchors.left: secondInversionCheckboxLabel.right
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+  }
+
+  Text {
     id: difficultySliderText
     text: "Difficulty"
-    anchors.top: dimAugCheckboxLabel.bottom
+    anchors.top: secondInversionCheckboxLabel.bottom
     anchors.left: window.left
     anchors.leftMargin: 10
     anchors.rightMargin: 10
@@ -111,7 +177,7 @@ MuseScore {
     minimumValue: 1
     stepSize: 1
     value: 2
-    anchors.top: dimAugCheckboxLabel.bottom
+    anchors.top: secondInversionCheckboxLabel.bottom
     anchors.left: difficultySliderText.right
     anchors.right: window.right
     anchors.leftMargin: 10
@@ -177,6 +243,17 @@ MuseScore {
     anchors.leftMargin: 10
     onClicked: {
       var subtitle = "Difficulty: " + difficultySlider.value + "  ";
+      if (!majorMinorCheckbox.checked && !dimAugCheckbox.checked) {
+        majorMinorCheckbox.checked = true;
+        dimAugCheckbox.checked = true;
+      }
+      if (!(rootPositionCheckbox.checked || firstInversionCheckbox.checked ||
+          secondInversionCheckbox.checked)) {
+        rootPositionCheckbox.checked = true;
+        firstInversionCheckbox.checked = true;
+        secondInversionCheckbox.checked = true;
+      }
+
       if (majorMinorCheckbox.checked) subtitle += "|  Maj/min  ";
       if (dimAugCheckbox.checked) subtitle += "|  dim/Aug  ";
       var probs = numProblems.value;
@@ -207,18 +284,18 @@ MuseScore {
           var upperNote1, upperNote2;
           while (true) {
             var choice = rrand_i(0, 12);
-            if (choice == 0 && majorMinorCheckbox.checked) break;
-            if (choice == 1 && majorMinorCheckbox.checked) break;
-            if (choice == 2 && dimAugCheckbox.checked) break;
-            if (choice == 3 && dimAugCheckbox.checked) break;
-            if (choice == 4 && majorMinorCheckbox.checked) break;
-            if (choice == 5 && majorMinorCheckbox.checked) break;
-            if (choice == 6 && dimAugCheckbox.checked) break;
-            if (choice == 7 && dimAugCheckbox.checked) break;
-            if (choice == 8 && majorMinorCheckbox.checked) break;
-            if (choice == 9 && majorMinorCheckbox.checked) break;
-            if (choice == 10 && dimAugCheckbox.checked) break;
-            if (choice == 11 && dimAugCheckbox.checked) break;
+            if (choice == 0 && majorMinorCheckbox.checked && rootPositionCheckbox.checked) break;
+            if (choice == 1 && majorMinorCheckbox.checked && rootPositionCheckbox.checked) break;
+            if (choice == 2 && dimAugCheckbox.checked && rootPositionCheckbox.checked) break;
+            if (choice == 3 && dimAugCheckbox.checked && rootPositionCheckbox.checked) break;
+            if (choice == 4 && majorMinorCheckbox.checked && firstInversionCheckbox.checked) break;
+            if (choice == 5 && majorMinorCheckbox.checked && firstInversionCheckbox.checked) break;
+            if (choice == 6 && dimAugCheckbox.checked && firstInversionCheckbox.checked) break;
+            if (choice == 7 && dimAugCheckbox.checked && firstInversionCheckbox.checked) break;
+            if (choice == 8 && majorMinorCheckbox.checked && secondInversionCheckbox.checked) break;
+            if (choice == 9 && majorMinorCheckbox.checked && secondInversionCheckbox.checked) break;
+            if (choice == 10 && dimAugCheckbox.checked && secondInversionCheckbox.checked) break;
+            if (choice == 11 && dimAugCheckbox.checked && secondInversionCheckbox.checked) break;
           }
 
           if (choice == 0) {
