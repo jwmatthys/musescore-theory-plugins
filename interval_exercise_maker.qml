@@ -215,6 +215,7 @@ MuseScore {
   function checkboxText(interval) {
     // return false if the interval is permitted?
     if (interval == 'A1') return true; // nobody wants augmented unison!
+    if (interval == 'AA1') return true; // even more true of doubly augmented unison.
     if (interval[0] == 'P' && perfectIntervalCheckbox.checked) return false;
     if (interval[0] == 'm' && imperfectIntervalCheckbox.checked) return false;
     if (interval[0] == 'M' && imperfectIntervalCheckbox.checked) return false;
