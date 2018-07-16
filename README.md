@@ -1,16 +1,34 @@
 # Counterpoint Checking Plugins for MuseScore2
 
-This is a set of plugins that will check for errors in 1st - 4th species tonal counterpoint, with rules set forth at http://sethmonahan.com/TH101HarmonicCounterpoint.html.
+This is a set of plugins that will check for errors in 1st - 5th species tonal counterpoint, with rules set forth at http://sethmonahan.com/TH101HarmonicCounterpoint.html, as well as four-part SATB writing. It will also identify intervals and chords using the interval_checker, chord_checker and pop_chord_checker, and generate original interval, triad, and seventh chord exercises.
 
 ## Installation
 
-Copy the included .qml files to your Documents/MuseScore2/Plugins folder. Then open MuseScore and open the Plugin Manager (in the Plugins menu). Check the boxes next to the tonal_species and modal_species entries and click OK. Now when you go to the Plugins menu they will appear under the heading “Proof Reading.”
+Copy the included .qml files to your Documents/MuseScore2/Plugins folder. Then open MuseScore and open the Plugin Manager (in the Plugins menu). Check the boxes next to the following entries and click OK:
+* species1
+* species2
+* species3
+* species4
+* species5
+* interval_checker
+* chord_checker
+* pop_chord_checker
+* interval_exercise_maker
+* triad_exercise_maker
+* seventh_chord_exercise_maker
+* interval_exercise_checker
+
+Now when you go to the Plugins menu the counterpoint, SATB, and interval, chord, and pop chord checkers will appear under the heading “Proof Reading.” The exercise makers and checkers appear in a separate top menu called "Exercises."
 
 ## Use
 
-This plugin checks the whole file, not a selection. Enter your counterpoint melody on a grand staff and run the plugin from the Plugins menu to check your results. If you are writing your own bass line, be sure to enter figured bass where necessary using ctrl-G.
+The counterpoint, SATB, and checker plugins check the whole file, not a selection.
 
-## Proofreading Codes
+### Counterpoint
+
+Enter your counterpoint melody on a grand staff and run the plugin from the Plugins menu to check your results. If you are writing your own bass line, be sure to enter figured bass where necessary using ctrl-G.
+
+### Counterpoint Proofreading Codes
 
 ```
 Code   Meaning
@@ -43,7 +61,7 @@ x      Forbidden offbeat notes in first species
 ||P5, ||P8    Parallel fifths or octaves
 ```
 
-## Other warning messages
+### Other warning messages
 
 ```
 Too many consecutive 3rds or 6ths (up to 4 before warning)
@@ -53,7 +71,7 @@ Too many leaps (up to 50% before warning)
 Melody should have larger range (experimental warning – uses standard deviation of melody)
 ```
 
-## Limitations
+### Limitations
 
 At this time, the plugin really works best on straightforward species examples. The tonal species plugins have been tested successfully with all of the examples in Seth Monahan’s excellent Two-Part Harmonic Species Counterpoint: An Introduction, available at http://sethmonahan.com/TH101HarmonicCounterpoint.html. The procedures for the tonal plugin are derived from the rules laid out in this book.
 
