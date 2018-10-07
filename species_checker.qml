@@ -51,6 +51,8 @@ MuseScore {
           forbid_Offbeats_checkbox.checked = true;
           forbid_Dissonant_Downbeats_checkbox.checked = true;
           forbid_Repeated_Note_Over_Barline_checkbox.checked = false;
+          forbid_Leap_From_Dissonance_checkbox.checked = false; // no need to check
+          forbid_Leap_To_Dissonance_checkbox.checked = false; // no need to check
           allow_Passing_Tone_checkbox.checked = false;
           allow_Neighbor_Tone_checkbox.checked = false;
           allow_Appoggiatura_checkbox.checked = false;
@@ -67,6 +69,8 @@ MuseScore {
           allow_Passing_Tone_checkbox.checked = true;
           forbid_All_Dissonance_checkbox.checked = false;
           forbid_Offbeats_checkbox.checked = false;
+          forbid_Leap_From_Dissonance_checkbox.checked = true;
+          forbid_Leap_To_Dissonance_checkbox.checked = true;
           allow_Neighbor_Tone_checkbox.checked = false;
           allow_Appoggiatura_checkbox.checked = false;
           allow_Appoggiatura_Down_checkbox.checked = false;
@@ -79,6 +83,8 @@ MuseScore {
         case 3:
           forbid_Dissonant_Downbeats_checkbox.checked = true;
           forbid_Repeated_Note_Over_Barline_checkbox.checked = true;
+          forbid_Leap_From_Dissonance_checkbox.checked = true;
+          forbid_Leap_To_Dissonance_checkbox.checked = true;
           allow_Passing_Tone_checkbox.checked = true;
           allow_Neighbor_Tone_checkbox.checked = true;
           allow_Nota_Cambiata_checkbox.checked = true;
@@ -103,6 +109,8 @@ MuseScore {
           forbid_All_Dissonance_checkbox.checked = false;
           forbid_Offbeats_checkbox.checked = false;
           forbid_Dissonant_Downbeats_checkbox.checked = false;
+          forbid_Leap_From_Dissonance_checkbox.checked = true;
+          forbid_Leap_To_Dissonance_checkbox.checked = true;
           forbid_Repeated_Note_Over_Barline_checkbox.checked = false;
           allow_Escape_Tone_checkbox.checked = false;
           break;
@@ -111,6 +119,8 @@ MuseScore {
           forbid_Offbeats_checkbox.checked = false;
           forbid_Dissonant_Downbeats_checkbox.checked = false;
           forbid_Repeated_Note_Over_Barline_checkbox.checked = false;
+          forbid_Leap_From_Dissonance_checkbox.checked = true;
+          forbid_Leap_To_Dissonance_checkbox.checked = true;
           allow_Passing_Tone_checkbox.checked = true;
           allow_Neighbor_Tone_checkbox.checked = true;
           allow_Appoggiatura_checkbox.checked = true;
@@ -1215,7 +1225,7 @@ MuseScore {
         }
 
         if (forbid_All_Dissonance_checkbox.checked) {
-          if (dyads[index].isDissonant()) {
+          if (!dyads[index].newBot && dyads[index].isDissonant()) {
             error.annotate(errorMessage.Forbid_All_Dissonance, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " off the beat\n";
           }
