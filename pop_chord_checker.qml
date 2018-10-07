@@ -1,9 +1,9 @@
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Proof Reading.Pop Chords"
+  menuPath: "Plugins.Proof Reading.Pop Chord Checker"
   version: "0.1"
-  description: "Check intervals"
+  description: "This plugin runs on the current open document to label chords with lead sheet (pop) chord symbols"
 
   function getNoteName(note_tpc) {
     var notename = "";

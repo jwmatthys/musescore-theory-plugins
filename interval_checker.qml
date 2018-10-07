@@ -1,9 +1,9 @@
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Proof Reading.Intervals"
+  menuPath: "Plugins.Proof Reading.Interval Checker"
   version: "0.1"
-  description: "Check intervals"
+  description: "This plugin runs on the current open document to label intervals by size and quality"
 
   function checkInterval(n1, n2) {
     var note1 = n1;

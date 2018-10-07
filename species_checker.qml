@@ -1,82 +1,647 @@
-import QtQuick 2.0
+import QtQuick 2.2
 import QtQuick.Dialogs 1.1
+import QtQuick.Controls 1.0
+import QtQuick.Layouts 1.0
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Proof Reading.Counterpoint.Species 3"
-  description: "Check for Errors in Third Species Counterpoint"
-  version: "0.6"
+  menuPath: "Plugins.Proof Reading.Species Counterpoint Checker"
+  description: "This plugin will check for errors in strict tonal or modal species counterpoint"
+  version: "0.7"
+  pluginType: "dialog"
+
+  id: window
+  width: 500;height: 570;
+
+  MessageDialog {
+    id: errorDetails
+    title: "Counterpoint Proof Reading Messages"
+    text: ""
+    onAccepted: {
+      Qt.quit();
+    }
+    visible: false;
+  }
+
+  Text {
+    id: speciesComboBoxText
+    text: "Select species:"
+    anchors.top: window.top
+    anchors.left: window.left;
+    anchors.topMargin: 10
+    anchors.bottomMargin: 15
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  ComboBox {
+    id: speciesComboBox
+    width: 80
+    model: ['First', 'Second', 'Third', 'Fourth', 'Fifth']
+    anchors.top: window.top
+    anchors.left: speciesComboBoxText.right;
+    anchors.topMargin: 10
+    anchors.bottomMargin: 15
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    onCurrentIndexChanged: {
+      switch (speciesComboBox.currentIndex + 1) {
+        case 1:
+          forbid_All_Dissonance_checkbox.checked = true;
+          forbid_Offbeats_checkbox.checked = true;
+          forbid_Dissonant_Downbeats_checkbox.checked = true;
+          forbid_Repeated_Note_Over_Barline_checkbox.checked = false;
+          allow_Passing_Tone_checkbox.checked = false;
+          allow_Neighbor_Tone_checkbox.checked = false;
+          allow_Appoggiatura_checkbox.checked = false;
+          allow_Appoggiatura_Down_checkbox.checked = false;
+          allow_Suspension_checkbox.checked = false;
+          allow_Retardation_checkbox.checked = false;
+          allow_Nota_Cambiata_checkbox.checked = false;
+          allow_Double_Neighbor_checkbox.checked = false;
+          allow_Escape_Tone_checkbox.checked = false;
+          break;
+        case 2:
+          forbid_Dissonant_Downbeats_checkbox.checked = true;
+          forbid_Repeated_Note_Over_Barline_checkbox.checked = true;
+          allow_Passing_Tone_checkbox.checked = true;
+          forbid_All_Dissonance_checkbox.checked = false;
+          forbid_Offbeats_checkbox.checked = false;
+          allow_Neighbor_Tone_checkbox.checked = false;
+          allow_Appoggiatura_checkbox.checked = false;
+          allow_Appoggiatura_Down_checkbox.checked = false;
+          allow_Suspension_checkbox.checked = false;
+          allow_Retardation_checkbox.checked = false;
+          allow_Nota_Cambiata_checkbox.checked = false;
+          allow_Double_Neighbor_checkbox.checked = false;
+          allow_Escape_Tone_checkbox.checked = false;
+          break;
+        case 3:
+          forbid_Dissonant_Downbeats_checkbox.checked = true;
+          forbid_Repeated_Note_Over_Barline_checkbox.checked = true;
+          allow_Passing_Tone_checkbox.checked = true;
+          allow_Neighbor_Tone_checkbox.checked = true;
+          allow_Nota_Cambiata_checkbox.checked = true;
+          allow_Double_Neighbor_checkbox.checked = true;
+          forbid_All_Dissonance_checkbox.checked = false;
+          forbid_Offbeats_checkbox.checked = false;
+          allow_Appoggiatura_checkbox.checked = false;
+          allow_Appoggiatura_Down_checkbox.checked = false;
+          allow_Suspension_checkbox.checked = false;
+          allow_Retardation_checkbox.checked = false;
+          allow_Escape_Tone_checkbox.checked = false;
+          break;
+        case 4:
+          allow_Passing_Tone_checkbox.checked = true;
+          allow_Neighbor_Tone_checkbox.checked = true;
+          allow_Appoggiatura_checkbox.checked = true;
+          allow_Appoggiatura_Down_checkbox.checked = true;
+          allow_Suspension_checkbox.checked = true;
+          allow_Retardation_checkbox.checked = true;
+          allow_Nota_Cambiata_checkbox.checked = false;
+          allow_Double_Neighbor_checkbox.checked = false;
+          forbid_All_Dissonance_checkbox.checked = false;
+          forbid_Offbeats_checkbox.checked = false;
+          forbid_Dissonant_Downbeats_checkbox.checked = false;
+          forbid_Repeated_Note_Over_Barline_checkbox.checked = false;
+          allow_Escape_Tone_checkbox.checked = false;
+          break;
+        default: // fifth species
+          forbid_All_Dissonance_checkbox.checked = false;
+          forbid_Offbeats_checkbox.checked = false;
+          forbid_Dissonant_Downbeats_checkbox.checked = false;
+          forbid_Repeated_Note_Over_Barline_checkbox.checked = false;
+          allow_Passing_Tone_checkbox.checked = true;
+          allow_Neighbor_Tone_checkbox.checked = true;
+          allow_Appoggiatura_checkbox.checked = true;
+          allow_Appoggiatura_Down_checkbox.checked = true;
+          allow_Suspension_checkbox.checked = true;
+          allow_Retardation_checkbox.checked = true;
+          allow_Nota_Cambiata_checkbox.checked = true;
+          allow_Double_Neighbor_checkbox.checked = true;
+          allow_Escape_Tone_checkbox.checked = true;
+          break;
+      }
+    }
+  }
+
+  Text {
+    id: modeComboBoxText
+    text: "Select mode:"
+    anchors.top: window.top
+    anchors.left: speciesComboBox.right;
+    anchors.topMargin: 10
+    anchors.bottomMargin: 15
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  ComboBox {
+    id: modeComboBox
+    width: 120
+    model: ['Tonal Major', 'Tonal Minor', 'Modal']
+    anchors.top: window.top
+    anchors.left: modeComboBoxText.right
+    anchors.topMargin: 10
+    anchors.bottomMargin: 15
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    onCurrentIndexChanged: {
+      switch (modeComboBox.currentIndex) {
+        case 0: // tonal major
+          forbid_Doubled_LT_checkbox.checked = true;
+          require_Perfect_First_And_Last_checkbox.checked = false;
+          require_Ti_Do_Resolution_On_V_I_checkbox.checked = true;
+          require_Fa_Mi_Resolution_On_V7_I_checkbox.checked = true;
+          allow_Raised_La_Ti_Minor_checkbox.checked = false;
+          break;
+        case 1: // tonal minor
+          forbid_Doubled_LT_checkbox.checked = true;
+          require_Perfect_First_And_Last_checkbox.checked = false;
+          require_Ti_Do_Resolution_On_V_I_checkbox.checked = true;
+          require_Fa_Mi_Resolution_On_V7_I_checkbox.checked = true;
+          allow_Raised_La_Ti_Minor_checkbox.checked = true;
+          break;
+        default: // modal
+          forbid_Accidentals_checkbox.checked = false;
+          forbid_Doubled_LT_checkbox.checked = false;
+          require_Perfect_First_And_Last_checkbox.checked = true;
+          require_Ti_Do_Resolution_On_V_I_checkbox.checked = false;
+          require_Fa_Mi_Resolution_On_V7_I_checkbox.checked = false;
+          allow_Raised_La_Ti_Minor_checkbox.checked = false;
+          break;
+      }
+    }
+  }
+
+  CheckBox {
+    id: show_Intervals_checkbox
+    text: "Show intervals"
+    checked: true
+    anchors.top: speciesComboBoxText.bottom
+    anchors.left: window.left
+    anchors.topMargin: 30
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Voice_Crossing_checkbox
+    text: "Forbid voice crossing"
+    checked: true
+    anchors.top: speciesComboBoxText.bottom
+    anchors.right: window.right
+    anchors.topMargin: 30
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_All_Dissonance_checkbox
+    text: "Forbid all dissonance"
+    checked: false
+    anchors.top: forbid_Voice_Crossing_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Passing_Tone_checkbox
+    text: "Allow passing tone"
+    checked: false
+    anchors.top: forbid_All_Dissonance_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Offbeats_checkbox
+    text: "Forbid offbeats"
+    checked: false
+    anchors.top: forbid_All_Dissonance_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Neighbor_Tone_checkbox
+    text: "Allow neighbor tone"
+    checked: false
+    anchors.top: allow_Passing_Tone_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Dissonant_Downbeats_checkbox
+    text: "Forbid dissonant downbeats"
+    checked: false
+    anchors.top: allow_Passing_Tone_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Appoggiatura_checkbox
+    text: "Allow upward appoggiatura"
+    checked: false
+    anchors.top: allow_Neighbor_Tone_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Accidentals_checkbox
+    text: "Forbid all accidentals"
+    checked: false
+    anchors.top: allow_Neighbor_Tone_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Appoggiatura_Down_checkbox
+    text: "Allow downward appoggiatura"
+    checked: false
+    anchors.top: allow_Appoggiatura_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Consecutive_Parallels_checkbox
+    text: "Forbid consecutive P5/P8"
+    checked: true
+    anchors.top: allow_Appoggiatura_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Suspension_checkbox
+    text: "Allow suspension"
+    checked: false
+    anchors.top: allow_Appoggiatura_Down_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Consecutive_Downbeat_Parallels_checkbox
+    text: "Forbid all accidentals"
+    checked: true
+    anchors.top: allow_Appoggiatura_Down_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Retardation_checkbox
+    text: "Allow retardation"
+    checked: false
+    anchors.top: allow_Suspension_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Direct_Fifths_checkbox
+    text: "Forbid direct fifths"
+    checked: true
+    anchors.top: allow_Suspension_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Nota_Cambiata_checkbox
+    text: "Allow nota cambiata"
+    checked: false
+    anchors.top: allow_Retardation_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Hidden_Parallels_checkbox
+    text: "Forbid hidden parallels"
+    checked: true
+    anchors.top: allow_Retardation_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Double_Neighbor_checkbox
+    text: "Allow double neighbor"
+    checked: false
+    anchors.top: allow_Nota_Cambiata_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Leap_To_Perfect_in_Similar_Motion_checkbox
+    text: "Forbid leap to Perfect in sim. motion"
+    checked: true
+    anchors.top: allow_Nota_Cambiata_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Escape_Tone_checkbox
+    text: "Allow escape tone"
+    checked: false
+    anchors.top: allow_Double_Neighbor_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Leap_From_Dissonance_checkbox
+    text: "Forbid leap from dissonance"
+    checked: true
+    anchors.top: allow_Double_Neighbor_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Leap_To_Dissonance_checkbox
+    text: "Forbid leap to dissonance"
+    checked: true
+    anchors.top: allow_Escape_Tone_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: require_Perfect_First_And_Last_checkbox
+    text: "Require perfect beginning & end"
+    checked: false
+    anchors.top: forbid_Leap_To_Dissonance_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Melodic_Aug_Or_Dim_checkbox
+    text: "Forbid melodic aug or dim"
+    checked: true
+    anchors.top: forbid_Leap_To_Dissonance_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: require_Step_Back_After_Leap_checkbox
+    text: "Require step back after leap"
+    checked: true
+    anchors.top: require_Perfect_First_And_Last_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Melodic_Seventh_checkbox
+    text: "Forbid melodic seventh"
+    checked: false
+    anchors.top: require_Perfect_First_And_Last_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: require_Ti_Do_Resolution_On_V_I_checkbox
+    text: "Require ti-do resolution on V-I"
+    checked: false
+    anchors.top: require_Step_Back_After_Leap_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Doubled_LT_checkbox
+    text: "Forbid doubled LT"
+    checked: false
+    anchors.top: require_Step_Back_After_Leap_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: require_Fa_Mi_Resolution_On_V7_I_checkbox
+    text: "Require fa-mi resolution on V7-I"
+    checked: false
+    anchors.top: require_Ti_Do_Resolution_On_V_I_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Repeated_Offbeats_checkbox
+    text: "Forbid repeated offbeats"
+    checked: true
+    anchors.top: require_Ti_Do_Resolution_On_V_I_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Repeated_Note_Over_Barline_checkbox
+    text: "Forbid repeated note over barline"
+    checked: false
+    anchors.top: require_Fa_Mi_Resolution_On_V7_I_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: allow_Raised_La_Ti_Minor_checkbox
+    text: "Allow raised 6-7 in minor"
+    checked: false
+    anchors.top: forbid_Repeated_Note_Over_Barline_checkbox.bottom
+    anchors.left: window.left
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+  CheckBox {
+    id: forbid_Unison_On_Downbeat_checkbox
+    text: "Forbid mid-phrase downbeat unison"
+    checked: true
+    anchors.top: forbid_Repeated_Note_Over_Barline_checkbox.bottom
+    anchors.right: window.right
+    anchors.topMargin: 5
+    anchors.bottomMargin: 5
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+  }
+
+
+  //----------------------------------------------------------------------------
+
+  Button {
+    id: buttonCheckCounterpoint
+    text: "Check Counterpoint"
+    anchors.bottom: window.bottom
+    anchors.right: window.right
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    onClicked: {
+      goSpecies();
+      curScore.doLayout();
+      curScore.endCmd();
+      //window.visible = false;
+      errorDetails.visible = true;
+    }
+  }
+
+  Button {
+    id: buttonCancel
+    text: "Cancel"
+    anchors.bottom: window.bottom
+    anchors.right: buttonCheckCounterpoint.left
+    anchors.topMargin: 10
+    anchors.bottomMargin: 10
+    anchors.leftMargin: 10
+    anchors.rightMargin: 10
+    onClicked: {
+      Qt.quit();
+    }
+  }
+
+  onRun: {}
 
   property
   var mode: "Major";
   property
   var counterpointRestrictions: Object.freeze({
-    Show_Intervals: true, // can be turned off if you want your students to figure these out themselves
-    Dissonant_Downbeats: true, // true means that these things will be checked, ie errors - DONE
-    Dissonant_Offbeats: true,
-    Voice_Crossing: true, // DONE
-    Accidentals: false, // will still allow raised 6 and raised 7 in minor - DONE
-    Perfect_First_And_Last: true, // generally false for tonal, true for modal
-    Melodic_Perfect_Parallels: true, // DONE
-    Consecutive_Downbeat_Parallels: true, // DONE
-    Direct_Fifths: true, // refers specifically to P5-d5 or d5-P5 - DONE
-    Hidden_Parallels: true, // Consecutive parallel P5 or P8 moving in opposite direction - DONE
-    Leap_To_Similar_Perfect: true, // melody leaps to a perfect interval in similar motion - DONE
-    Leap_From_Dissonance: true, // a general truism - DONE
-    Leap_To_Dissonance: true, // exception is Allow_Appoggiatura or Allow_Downward_Appoggiatura - DONE
-    Melodic_Aug_Or_Dim: true, // DONE
-    Melodic_Seventh: true, // DONE
-    Offbeat: false, // no offbeats, ie first species - DONE
-    Doubled_LT: false, // DONE
-    Cadence_raised_LT: true, // DONE
-    Cadence_LT_Resolution: false, // DONE
-    V7_Resolution: false, // DONE
-    Repeated_Note_Over_Barline: true, // strict species forbids this in spec 2 & 3 but not 4 - DONE
-    Repeated_Offbeat: true, // This is usually true - DONE
-    Unison_On_Downbeat: true, // Prohibits harmonic unison except beginning and end and offbeats
-    Allow_Passing_Tone: true, // DONE
-    Allow_Neighbor_Tone: true, // DONE
-    Allow_Appoggiatura: false, // DONE
-    Allow_Downward_Appoggiatura: false, // DONE
-    Allow_Suspension: false, // DONE
-    Allow_Retardation: false, // DONE
-    Allow_Accented_Passing_Tone: false, // for species 4
-    Allow_Accented_Neighbor: false, // for species 4
-    Nota_Cambiata: true, // DONE
-    Double_Neighbor: true, // DONE
-    Escape_Tone: false, // overrides Leap_From_Dissonance DONE
-    Step_Back_After_Leap: true, // warns if leap of 6th or octave doesn't step back the opposite direction - DONE
-    Max_Perfect: 50, // percent; warn if too many perfect intervals - DONE
+    Max_Perfect: 30, // percent; warn if too many perfect intervals - DONE
     Max_Leaps: 50, // percent; warn if too many leaps - DONE
     Max_Consecutive_36: 4, // maximum number of consecutive 3rds or 6ths - DONE
     Max_Consecutive_Leaps: 4, // DONE
-    Min_Std_Dev: 1.5 // experimental: measure of how much melody - DONE, but what is the threshold??
+    Min_Std_Dev: 1 // experimental: measure of how much melody - DONE, but what is the threshold??
   });
 
   property
   var errorMessage: Object.freeze({
-    Dissonant_Downbeats: "dis",
-    Dissonant_Offbeats: "dis",
-    Voice_Crossing: "X",
-    Accidentals: "acc", // will still allow raised 6 and raised 7 in minor
-    Perfect_First_And_Last: "~P", // generally false for tonal, true for modal
-    Melodic_Perfect_Parallels: "||",
-    Consecutive_Downbeat_Parallels: "||",
-    Direct_Fifths: "dir", // refers specifically to P5-d5 or d5-P5
-    Hidden_Parallels: "hid", // Consecutive parallel P5 or P8 moving in opposite direction
-    Leap_To_Similar_Perfect: "ltp", // melody leaps to a perfect interval in similar motion
-    Leap_From_Dissonance: "lfd", // a general truism
-    Leap_To_Dissonance: "ltd", // (only exception is appoggiatura)
-    Melodic_Aug_Or_Dim: "->",
-    Melodic_Seventh: "mel7",
-    Offbeat: "x", // no offbeats, ie first species
-    Doubled_LT: "2xlt",
-    Cadence_raised_LT: "lt!",
-    Cadence_LT_Resolution: "lt",
-    V7_Resolution: "7th",
-    Repeated_Note_Over_Barline: "rep", // strict species forbids this in spec 2 & 3 but not 4
-    Repeated_Offbeat: "rep", // This is usually true
-    Unison_On_Downbeat: "~1", // Prohibits harmonic unison except beginning and end and offbeats
+    Forbid_Dissonant_Downbeats: "dis",
+    Forbid_All_Dissonance: "dis",
+    Forbid_Voice_Crossing: "X",
+    Forbid_Accidentals: "acc",
+    Require_Perfect_First_And_Last: "~P", // generally false for tonal, true for modal
+    Forbid_Consecutive_Perfect_Parallels: "||",
+    Forbid_Consecutive_Downbeat_Parallels: "||",
+    Forbid_Direct_Fifths: "dir", // refers specifically to P5-d5 or d5-P5
+    Forbid_Hidden_Parallels: "hid", // Consecutive parallel P5 or P8 moving in opposite direction
+    Forbid_Leap_To_Perfect_in_Similar_Motion: "ltp", // melody leaps to a perfect interval in similar motion
+    Forbid_Leap_From_Dissonance: "lfd", // a general truism
+    Forbid_Leap_To_Dissonance: "ltd", // (only exception is appoggiatura)
+    Forbid_Melodic_Aug_Or_Dim: "->",
+    Forbid_Melodic_Seventh: "mel7",
+    Forbid_Offbeats: "x", // no offbeats, ie first species
+    Forbid_Doubled_LT: "2xlt",
+    Check_For_Raised_LT_On_V_I: "lt!",
+    Check_For_Ti_Do_Resolution_On_V_I: "lt",
+    Check_For_Fa_Mi_Resolution_On_V7_I: "7th",
+    Forbid_Repeated_Note_Over_Barline: "rep", // strict species forbids this in spec 2 & 3 but not 4
+    Forbid_Repeated_Offbeats: "rep", // This is usually true
+    Forbid_Unison_On_Downbeat: "~1", // Prohibits harmonic unison except beginning and end and offbeats
     Allow_Passing_Tone: "PT",
     Allow_Neighbor_Tone: "NT",
     Allow_Appoggiatura: "APP",
@@ -85,10 +650,10 @@ MuseScore {
     Allow_Retardation: "RET",
     Allow_Accented_Passing_Tone: "APT", // for species 4
     Allow_Accented_Neighbor: "AN", // for species 4
-    Nota_Cambiata: "NC",
-    Double_Neighbor: "DN", // the more general version of nota combiata that can move up or down
-    Escape_Tone: "ET", // overrides Leap_From_Dissonance
-    Step_Back_After_Leap: "sb", // warns if leap of 6th or octave doesn't step back the opposite direction
+    Allow_Nota_Cambiata: "NC",
+    Allow_Double_Neighbor: "DN", // the more general version of nota combiata that can move up or down
+    Allow_Escape_Tone: "ET", // an exception to Forbid_Leap_From_Dissonance
+    Check_For_Step_Back_After_Leap: "sb", // warns if leap of 6th or octave doesn't step back the opposite direction
     Max_Perfect: 0.5, // warn if too many perfect intervals
     Max_Leaps: 0.5, // warn if too many leaps
     Max_Consecutive_36: 4, // maximum number of consecutive 3rds or 6ths
@@ -108,6 +673,7 @@ MuseScore {
   var colorCT: "#000000"
   property
   var inversion: Object.freeze({
+    MODAL: [8, 6, 5, 3, 1],
     ROOT: [8, 5, 3, 1],
     FIRSTINV: [8, 6, 3, 1],
     SECONDINV: [8, 6, 4, 1],
@@ -116,6 +682,7 @@ MuseScore {
     SECONDINV7: [8, 6, 4, 3, 1],
     THIRDINV7: [8, 6, 4, 2, 1]
   });
+
   property
   var intervalQual: Object.freeze({
     DIM: "d",
@@ -132,16 +699,6 @@ MuseScore {
     SIMILAR: "Similar",
     PARALLEL: "Parallel"
   });
-
-  MessageDialog {
-    id: errorDetails
-    title: "Counterpoint Proof Reading Messages"
-    text: ""
-    onAccepted: {
-      Qt.quit();
-    }
-    visible: false;
-  }
 
   function cInterval(note1, note2) {
     this.note1 = note1;
@@ -278,28 +835,48 @@ MuseScore {
       return result;
     }
 
+    this.checkRaisedLT = function(note) {
+      if (note) {
+        return (5 == note.tpc - key);
+      }
+    }
+
+    this.checkRaised6or7inMinor = function(note) {
+      var result = false;
+      if (note) {
+        var circleDiff = note.tpc - key;
+        if (3 == circleDiff) result = true;
+        if (5 == circleDiff) result = true;
+      }
+      return result;
+    }
+
     this.topNote = this.getNote(this.segment.elementAt(0));
     this.botNote = this.getNote(this.segment.elementAt(4));
     this.newTop = false;
     this.newBot = false;
     this.prevTop = null; //type ELEMENT.CHORD
     this.prevBot = null; //type ELEMENT.CHORD
-    this.prevFB = null; //type Element.FIGURED_BASS
+    this.previousFiguredBass = null; //type Element.FIGURED_BASS
     this.interval = null;
     this.nct = null; //type bool
-    if (mode == "Modal") this.consonances = inversion.FIRSTINV7;
-    else this.consonances = inversion.ROOT;
+    this.isRaised6or7 = this.checkRaised6or7inMinor(this.topNote);
+    this.isRaisedLT = this.checkRaisedLT(this.topNote);
     this.errorYpos = 0; // type int
     this.measure = measure; // type int
 
     this.processFiguredBass = function() {
-      this.fb = this.segment.annotations[0];
-      if (this.botNote) {
-        if (mode == "Modal") this.consonances = inversion.FIRSTINV7;
-        else this.consonances = inversion.ROOT;
-      } else this.fb = this.prevFB;
-      if (this.fb && this.fb.type == Element.FIGURED_BASS) {
-        var cleanedFBtext = this.fb.text.replace(/[^234567]/g, '');
+      this.figuredBass = this.segment.annotations[0];
+      if (!this.botNote) {
+        this.figuredBass = this.previousFiguredBass;
+        this.consonances = this.previousConsonances;
+      } else {
+        this.consonances = inversion.ROOT;
+        if (2 == modeComboBox.currentIndex) this.consonances = inversion.MODAL;
+      }
+      if (this.figuredBass && this.figuredBass.type == Element.FIGURED_BASS) {
+        var cleanedFBtext = this.figuredBass.text.replace(/[^234567]/g, '');
+        //console.log("figbass: "+cleanedFBtext+"\n");
         if (cleanedFBtext == "6" || cleanedFBtext == "63") this.consonances = inversion.FIRSTINV;
         if (cleanedFBtext == "64") this.consonances = inversion.SECONDINV;
         if (cleanedFBtext == "7" || cleanedFBtext == "753") this.consonances = inversion.ROOT7
@@ -322,8 +899,9 @@ MuseScore {
         if (this.botNote) this.newBot = false;
       }
       this.interval = new cInterval(this.topNote, this.botNote, key);
+      //console.log("size: " + this.interval.size);
       this.nct = (this.consonances.indexOf(this.interval.size) == -1);
-      //console.log("interval: "+this.interval.toString()+" = NCT? " +this.nct );
+      //console.log("interval: " + this.interval.toString() + " = NCT? " + this.nct);
     }
 
     this.isDissonant = function() {
@@ -342,21 +920,26 @@ MuseScore {
     }
 
     this.isVchord = function() {
-      if (this.botNote && this.botNote.sd == 5 &&
-        (this.consonances == inversion.ROOT || this.consonances == inversion.ROOT7)) return true;
-      if (this.botNote && this.botNote.sd == 7 &&
-        (this.consonances == inversion.FIRSTINV || this.consonances == inversion.FIRSTINV7)) return true;
-      if (this.botNote && this.botNote.sd == 2 &&
-        (this.consonances == inversion.SECONDINV || this.consonances == inversion.SECONDINV7)) return true;
-      if (this.botNote && this.botNote.sd == 4 &&
-        (this.consonances == inversion.THIRDINV || this.consonances == inversion.THIRDINV7)) return true;
+      if (this.botNote) {
+        if (this.botNote.sd == 5 &&
+          (this.consonances == inversion.ROOT || this.consonances == inversion.ROOT7)) return true;
+        if (this.botNote.sd == 7 &&
+          (this.consonances == inversion.FIRSTINV || this.consonances == inversion.FIRSTINV7)) return true;
+        if (this.botNote.sd == 2 &&
+          (this.consonances == inversion.SECONDINV || this.consonances == inversion.SECONDINV7)) return true;
+        if (this.botNote.sd == 4 &&
+          (this.consonances == inversion.THIRDINV || this.consonances == inversion.THIRDINV7)) return true;
+      }
       return false;
     }
 
     this.isIchord = function() {
-      if (this.botNote && this.botNote.sd == 1 && this.consonances == inversion.ROOT) return true;
-      if (this.botNote && this.botNote.sd == 3 && this.consonances == inversion.FIRSTINV) return true;
-      if (this.botNote && this.botNote.sd == 5 && this.consonances == inversion.SECONDINV) return true;
+      if (this.botNote) {
+        if (this.botNote.sd == 1 && this.consonances == inversion.ROOT) return true;
+        if (this.botNote.sd == 3 && this.consonances == inversion.FIRSTINV) return true;
+        if (this.botNote.sd == 5 && this.consonances == inversion.SECONDINV) return true;
+      }
+      return false;
     }
   }
 
@@ -415,23 +998,21 @@ MuseScore {
     return tonalMotion.SIMILAR;
   }
 
-  onRun: {
+  function goSpecies() {
+    errorDetails.text = modeComboBox.textAt(modeComboBox.currentIndex) + " " + speciesComboBox.textAt(speciesComboBox.currentIndex) + " Species:\n";
+
     if (typeof curScore == 'undefined' || curScore == null) {
       console.log("no score found");
       Qt.quit();
     }
+    curScore.startCmd();
     var dyads = [];
     var prevDownbeat = 0;
     var measure = 1;
     var cursor = curScore.newCursor();
-    if (curScore.poet.toUpperCase() == "MINOR") {
-      mode = "Minor";
-    } else if (curScore.poet.toUpperCase() == "MODAL") {
-      mode = "Modal";
-    }
     cursor.rewind(0);
     key = cursor.keySignature + 14;
-    if (mode == "Minor") key += 3;
+    if (1 == modeComboBox.currentIndex) key += 3;
     var segment = cursor.segment;
 
     // Process all dyads and mark intervals
@@ -445,12 +1026,13 @@ MuseScore {
         if (index > 0) {
           dyads[index].prevTop = dyads[index - 1].topNote;
           dyads[index].prevBot = dyads[index - 1].botNote;
-          dyads[index].prevFB = dyads[index - 1].fb;
+          dyads[index].previousFiguredBass = dyads[index - 1].figuredBass;
+          dyads[index].previousConsonances = dyads[index - 1].consonances;
         }
         dyads[index].processFiguredBass();
         dyads[index].processInterval();
         // Label intervals
-        if (counterpointRestrictions.Show_Intervals) {
+        if (show_Intervals_checkbox.checked) {
           var text = newElement(Element.STAFF_TEXT);
           text.pos.y = 10;
           text.text = dyads[index].interval.toString();
@@ -469,38 +1051,38 @@ MuseScore {
       // Here come the verticality error checks!
       var error = new counterpointError(cursor, dyads[index]);
 
-      if (counterpointRestrictions.Perfect_First_And_Last && mode == "Modal") {
+      if (require_Perfect_First_And_Last_checkbox.checked) {
         if (index == 0 && dyads[index].topNote && !dyads[index].interval.isPerfect()) {
-          error.annotate(errorMessage.Perfect_First_And_Last, colorError);
+          error.annotate(errorMessage.Require_Perfect_First_And_Last, colorError);
           errorDetails.text += "Measure " + dyads[index].measure + ": Must begin on perfect consonance\n";
         } else if (index == 1 && !dyads[0].topNote && !dyads[index].interval.isPerfect()) { // if it starts with rest
-          error.annotate(errorMessage.Perfect_First_And_Last, colorError);
+          error.annotate(errorMessage.Require_Perfect_First_And_Last, colorError);
           errorDetails.text += "Measure " + dyads[index].measure + ": Must begin on perfect consonance\n";
         } else if (index == dyads.length - 1 && !dyads[index].interval.isPerfect()) {
-          error.annotate(errorMessage.Perfect_First_And_Last, colorError);
+          error.annotate(errorMessage.Require_Perfect_First_And_Last, colorError);
           errorDetails.text += "Measure " + dyads[index].measure + ": Must end on perfect consonance\n";
         }
       }
 
-      if (counterpointRestrictions.Unison_On_Downbeat) {
+      if (forbid_Unison_On_Downbeat_checkbox.checked) {
         if (dyads[index].interval.size == 1 && dyads[index].newBot &&
           index < dyads.length - 1 && index > 0) {
-          error.annotate(errorMessage.Unison_On_Downbeat, colorError);
+          error.annotate(errorMessage.Forbid_Unison_On_Downbeat, colorError);
           errorDetails.text += "Measure " + dyads[index].measure + ": P1 may only occur at the start, end, or offbeat\n";
         }
       }
 
       if (dyads[index].topNote && dyads[index].botNote) {
-        if (counterpointRestrictions.Offbeat) {
+        if (forbid_Offbeats_checkbox.checked) {
           if (!dyads[index].newBot) {
-            error.annotate(errorMessage.Offbeat, colorError);
+            error.annotate(errorMessage.Forbid_Offbeats, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": First species allows only one melody note per bass note\n";
           }
         }
 
         if (index > 0 && index < (dyads.length - 1)) // Let's go after those triples (PT, NT, app, ret, sus, apt)
         {
-          if (counterpointRestrictions.Allow_Passing_Tone) {
+          if (allow_Passing_Tone_checkbox.checked) {
             if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
               if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
                 error.annotate(errorMessage.Allow_Passing_Tone, colorCT);
@@ -509,7 +1091,7 @@ MuseScore {
             }
           }
 
-          if (counterpointRestrictions.Allow_Accented_Passing_Tone) {
+          if (allow_Passing_Tone_checkbox.checked && !forbid_Dissonant_Downbeats_checkbox.checked) {
             if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
               if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
                 error.annotate(errorMessage.Allow_Accented_Passing_Tone, colorCT);
@@ -518,7 +1100,7 @@ MuseScore {
             }
           }
 
-          if (counterpointRestrictions.Allow_Neighbor_Tone) {
+          if (allow_Neighbor_Tone_checkbox.checked) {
             if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
               if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
                 error.annotate(errorMessage.Allow_Neighbor_Tone, colorCT);
@@ -527,7 +1109,7 @@ MuseScore {
             }
           }
 
-          if (counterpointRestrictions.Allow_Accented_Neighbor) {
+          if (allow_Neighbor_Tone_checkbox.checked && !forbid_Dissonant_Downbeats_checkbox.checked) {
             if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
               if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
                 error.annotate(errorMessage.Allow_Accented_Neighbor, colorCT);
@@ -537,7 +1119,7 @@ MuseScore {
           }
         }
 
-        if (counterpointRestrictions.Nota_Cambiata && index > 0 && index < dyads.length - 3) {
+        if (allow_Nota_Cambiata_checkbox.checked && index > 0 && index < dyads.length - 3) {
           var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
           var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
           var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
@@ -547,14 +1129,14 @@ MuseScore {
                 dyads[index + 1].interval.size == 5 && dyads[index + 2].interval.size == 6) ||
               (dyads[index - 1].interval.size == 6 && dyads[index].interval.size == 5 &&
                 dyads[index + 1].interval.size == 3 && dyads[index + 2].interval.size == 4))) {
-            error.annotate(errorMessage.Nota_Cambiata, colorCT);
+            error.annotate(errorMessage.Allow_Nota_Cambiata, colorCT);
             dyads[index].permittedDissonance = true;
             dyads[index + 1].permittedDissonance = true;
             dyads[index + 2].permittedDissonance = true;
           }
         }
 
-        if (counterpointRestrictions.Double_Neighbor && index > 0 && index < dyads.length - 4) {
+        if (allow_Double_Neighbor_checkbox.checked && index > 0 && index < dyads.length - 4) {
           var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
           var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
           var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
@@ -564,14 +1146,14 @@ MuseScore {
             dyads[index - 1].newBot && !dyads[index].newBot && !dyads[index + 1].newBot && !dyads[index + 2].newBot && dyads[index + 3].newBot &&
             int1.size == 2 && int2.size == 3 && int3.size == 2 && int4.size == 2 &&
             !dyads[index - 1].nct && !dyads[index + 3].nct) {
-            error.annotate(errorMessage.Double_Neighbor, colorCT);
+            error.annotate(errorMessage.Allow_Double_Neighbor, colorCT);
             dyads[index].permittedDissonance = true;
             dyads[index + 1].permittedDissonance = true;
             dyads[index + 2].permittedDissonance = true;
           }
         }
 
-        if (counterpointRestrictions.Allow_Suspension && index > 0 && index < dyads.length - 2) {
+        if (allow_Suspension_checkbox.checked && index > 0 && index < dyads.length - 2) {
           var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
           if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
             !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
@@ -582,7 +1164,7 @@ MuseScore {
           }
         }
 
-        if (counterpointRestrictions.Allow_Retardation && index > 0 && index < dyads.length - 2) {
+        if (allow_Retardation_checkbox.checked && index > 0 && index < dyads.length - 2) {
           var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
           if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
             !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
@@ -593,7 +1175,7 @@ MuseScore {
           }
         }
 
-        if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Appoggiatura) {
+        if (index > 0 && index < (dyads.length - 2) && allow_Appoggiatura_checkbox.checked) {
           var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
           var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
           if (melodicInterval.direction > 0 && melodicInterval.size > 2 && dyads[index].newBot && dyads[index].nct &&
@@ -603,7 +1185,7 @@ MuseScore {
           }
         }
 
-        if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Allow_Downward_Appoggiatura) {
+        if (index > 0 && index < (dyads.length - 2) && allow_Appoggiatura_Down_checkbox.checked) {
           var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
           var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
           if (melodicInterval.direction < 0 && melodicInterval.size > 2 && !dyads[index + 1].nct && dyads[index].newBot &&
@@ -613,71 +1195,66 @@ MuseScore {
           }
         }
 
-        if (index > 0 && index < (dyads.length - 2) && counterpointRestrictions.Escape_Tone) {
+        if (index > 0 && index < (dyads.length - 2) && allow_Escape_Tone_checkbox.checked) {
           var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
           var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
           if (melodicInterval.size == 2 && !!dyads[index - 1].nct && dyads[index].nct &&
             !dyads[index].newBot && !dyads[index + 1].nct &&
             melodicInterval2.direction != 0 && melodicInterval.direction == -1 * melodicInterval2.direction) {
-            error.annotate(errorMessage.Escape_Tone, colorCT);
+            error.annotate(errorMessage.Allow_Escape_Tone, colorCT);
             dyads[index].permittedDissonance = true;
           }
         }
 
 
-        if (counterpointRestrictions.Dissonant_Downbeats) {
+        if (forbid_Dissonant_Downbeats_checkbox.checked) {
           if (dyads[index].newBot && dyads[index].isDissonant()) {
-            error.annotate(errorMessage.Dissonant_Downbeats, colorError);
+            error.annotate(errorMessage.Forbid_Dissonant_Downbeats, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " over bass note change\n";
           }
         }
 
-        if (counterpointRestrictions.Dissonant_Offbeats) {
-          if (!dyads[index].newBot && dyads[index].isDissonant()) {
-            error.annotate(errorMessage.Dissonant_Offbeats, colorError);
+        if (forbid_All_Dissonance_checkbox.checked) {
+          if (dyads[index].isDissonant()) {
+            error.annotate(errorMessage.Forbid_All_Dissonance, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " off the beat\n";
           }
         }
 
-
-        if (counterpointRestrictions.Voice_Crossing) {
+        if (forbid_Voice_Crossing_checkbox.checked) {
           if (dyads[index].voiceCross()) {
-            error.annotate(errorMessage.Voice_Crossing, colorError);
+            error.annotate(errorMessage.Forbid_Voice_Crossing, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": Melody crosses bass\n";
           }
         }
 
-        if (counterpointRestrictions.Doubled_LT && mode != "Modal") {
+        if (forbid_Doubled_LT_checkbox.checked) {
           if (dyads[index].topNote.sd == 7 && dyads[index].botNote.sd == 7) {
-            error.annotate(errorMessage.Doubled_LT, colorError);
+            error.annotate(errorMessage.Forbid_Doubled_LT, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": Doubled Leading Tone\n";
           }
         }
 
-        if (counterpointRestrictions.Accidentals) {
-          if (dyads[index].topNote.accidental) {
-            if (mode != "Minor") {
-              error.annotate(errorMessage.Accidentals, colorError);
-              errorDetails.text += "Measure " + dyads[index].measure + ": Accidentals are restricted in this species\n";
-              dyads[index].topNote.accidental.color = "#ff0000";
-            } else {
-              if (dyads[index].topNote.sd < 6 || dyads[index].topNote.sd > 7) {
-                error.annotate(errorMessage.Accidentals, colorError);
-                errorDetails.text += "Measure " + dyads[index].measure + ": Only scale degrees 6 & 7 can be altered with accidentals in this species\n";
-                dyads[index].topNote.accidental.color = "#ff0000";
-              }
-            }
+        if (forbid_Accidentals_checkbox.checked && dyads[index].topNote.accidental) {
+          if (!allow_Raised_La_Ti_Minor_checkbox.checked) {
+            error.annotate(errorMessage.Forbid_Accidentals, colorError);
+            errorDetails.text += "Measure " + dyads[index].measure + ": Accidentals are restricted in this species\n";
+            dyads[index].topNote.accidental.color = "#ff0000";
+          } else if (!dyads[index].isRaised6or7) {
+            error.annotate(errorMessage.Forbid_Accidentals, colorError);
+            errorDetails.text += "Measure " + dyads[index].measure + ": Only raised scale degrees 6 & 7 can be altered with accidentals in this species\n";
+            dyads[index].topNote.accidental.color = "#ff0000";
           }
         }
 
-        if (counterpointRestrictions.Consecutive_Downbeat_Parallels) {
+        if (forbid_Consecutive_Downbeat_Parallels_checkbox.checked) {
           if (dyads[index].newBot) {
             if (index - prevDownbeat > 1 &&
               dyads[prevDownbeat].interval.isPerfect() &&
               dyads[index].interval.isPerfect() &&
               dyads[prevDownbeat].interval.size == dyads[index].interval.size &&
               motion(dyads[prevDownbeat], dyads[index]) == tonalMotion.SIMILAR) {
-              error.annotate(errorMessage.Consecutive_Downbeat_Parallels + dyads[index].interval.toString(), colorError);
+              error.annotate(errorMessage.Forbid_Consecutive_Downbeat_Parallels + dyads[index].interval.toString(), colorError);
               errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + " on consecutive downbeats\n";
             }
             prevDownbeat = index;
@@ -688,122 +1265,122 @@ MuseScore {
 
       // Now the checks of 2 consecutive notes
       if (index > 0) {
-        if (counterpointRestrictions.Melodic_Aug_Or_Dim) {
+        if (forbid_Melodic_Aug_Or_Dim_checkbox.checked) {
           var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
           if (melodicInterval.quality != intervalQual.PERFECT &&
             melodicInterval.quality != intervalQual.MAJOR &&
             melodicInterval.quality != intervalQual.MINOR &&
             melodicInterval.size != null) {
-            error.annotate(errorMessage.Melodic_Aug_Or_Dim + melodicInterval.toString(), colorError);
+            error.annotate(errorMessage.Forbid_Melodic_Aug_Or_Dim + melodicInterval.toString(), colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": Melody leaps by dissonant interval " + melodicInterval.toString() + "\n";
           }
         }
-        if (counterpointRestrictions.Melodic_Seventh) {
+        if (forbid_Melodic_Seventh_checkbox.checked) {
           var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
           if (melodicInterval.size == 7) {
-            error.annotate(errorMessage.Melodic_Seventh, colorError);
+            error.annotate(errorMessage.Forbid_Melodic_Seventh, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": Melody leaps " + melodicInterval.toString() + "\n";
           }
         }
-        if (counterpointRestrictions.Melodic_Perfect_Parallels) {
+        if (forbid_Consecutive_Parallels_checkbox.checked) {
           if (dyads[index].interval.isPerfect() &&
             dyads[index - 1].interval.isPerfect() &&
             dyads[index].interval.size == dyads[index - 1].interval.size &&
             motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
-            error.annotate(errorMessage.Melodic_Perfect_Parallels + dyads[index].interval.toString(), colorError);
+            error.annotate(errorMessage.Forbid_Consecutive_Perfect_Parallels + dyads[index].interval.toString(), colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + "\n";
           }
         }
-        if (counterpointRestrictions.Direct_Fifths) {
+        if (forbid_Direct_Fifths_checkbox.checked) {
           if (dyads[index].interval.size == 5 &&
             dyads[index - 1].interval.size == 5 &&
             dyads[index].interval.quality != dyads[index - 1].interval.quality &&
             motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
-            error.annotate(errorMessage.Direct_Fifths, colorError);
+            error.annotate(errorMessage.Forbid_Direct_Fifths, colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Consecutive 5ths in same direction\n";
           }
         }
-        if (counterpointRestrictions.Hidden_Parallels) {
+        if (forbid_Hidden_Parallels_checkbox.checked) {
           if (dyads[index].newBot && dyads[index].interval.isPerfect() &&
             dyads[index - 1].interval.isPerfect() &&
             dyads[index].interval.size == dyads[index - 1].interval.size &&
             motion(dyads[index], dyads[index - 1]) == tonalMotion.CONTRARY) {
-            error.annotate(errorMessage.Hidden_Parallels + dyads[index].interval.toString(), colorError);
+            error.annotate(errorMessage.Forbid_Hidden_Parallels + dyads[index].interval.toString(), colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Hidden " + dyads[index].interval.toString() + "\n";
           }
         }
-        if (counterpointRestrictions.Leap_To_Similar_Perfect) {
+        if (forbid_Leap_To_Perfect_in_Similar_Motion_checkbox.checked) {
           if (dyads[index].interval.isPerfect()) {
             var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
             if (motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR &&
               melodicInterval.size > 2) {
-              error.annotate(errorMessage.Leap_To_Similar_Perfect, colorError);
+              error.annotate(errorMessage.Forbid_Leap_To_Perfect_in_Similar_Motion, colorError);
               errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps to " + dyads[index].interval.toString() + " in similar motion\n";
             }
           }
         }
 
-        if (counterpointRestrictions.Leap_From_Dissonance) {
+        if (forbid_Leap_From_Dissonance_checkbox.checked) {
           if (dyads[index - 1].isDissonant()) {
             var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
             if (melodicInterval.size > 2) {
-              error.annotate(errorMessage.Leap_From_Dissonance, colorError);
+              error.annotate(errorMessage.Forbid_Leap_From_Dissonance, colorError);
               errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps from NCT or dissonant interval " + dyads[index - 1].interval.toString() + "\n";
             }
           }
         }
 
-        if (counterpointRestrictions.Leap_To_Dissonance) {
+        if (forbid_Leap_To_Dissonance_checkbox.checked) {
           if (dyads[index].isDissonant()) {
             var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
             if (melodicInterval.size > 2) {
-              error.annotate(errorMessage.Leap_To_Dissonance, colorError);
+              error.annotate(errorMessage.Forbid_Leap_To_Dissonance, colorError);
               errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps to NCT or dissonant interval " + dyads[index].interval.toString() + "\n";
             }
           }
         }
 
-        if (counterpointRestrictions.Repeated_Offbeat) {
+        if (forbid_Repeated_Offbeats_checkbox.checked) {
           if (dyads[index].topNote && dyads[index - 1].topNote &&
             dyads[index].botNote && !dyads[index].newBot &&
             dyads[index].topNote.pitch == dyads[index - 1].topNote.pitch &&
             dyads[index].topNote.tpc == dyads[index - 1].topNote.tpc) {
-            error.annotate(errorMessage.Repeated_Offbeat, colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Offbeat melody note repeats\n";
+            error.annotate(errorMessage.Forbid_Repeated_Offbeats, colorError);
+            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Forbid_Offbeats melody note repeats\n";
           }
         }
 
-        if (counterpointRestrictions.Repeated_Note_Over_Barline) {
+        if (forbid_Repeated_Note_Over_Barline_checkbox.checked) {
           if (dyads[index].topNote && dyads[index - 1].topNote &&
             dyads[index].botNote && dyads[index].newBot &&
             dyads[index].topNote.pitch == dyads[index - 1].topNote.pitch &&
             dyads[index].topNote.tpc == dyads[index - 1].topNote.tpc &&
             !dyads[index].permittedDissonance) {
-            error.annotate(errorMessage.Repeated_Note_Over_Barline, colorError);
+            error.annotate(errorMessage.Forbid_Repeated_Note_Over_Barline, colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody note repeats over bass change\n";
           }
         }
 
         if (dyads[index - 1].isVchord() && dyads[index].isIchord()) {
-          if (counterpointRestrictions.V7_Resolution && dyads[index - 1].topNote.sd == 4 && dyads[index].topNote.sd != 3) {
-            error.annotate(errorMessage.V7_Resolution, colorError);
+          if (require_Fa_Mi_Resolution_On_V7_I_checkbox.checked && dyads[index - 1].topNote.sd == 4 && dyads[index].topNote.sd != 3) {
+            error.annotate(errorMessage.Check_For_Fa_Mi_Resolution_On_V7_I, colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Seventh of V7 must resolve down by step\n";
           } else if (dyads[index - 1].topNote.sd == 7 && dyads[index].topNote.sd != 1 && dyads[index].topNote.sd != dyads[index - 1].topNote.sd) {
-            error.annotate(errorMessage.V7_Resolution, colorError);
+            error.annotate(errorMessage.Check_For_Fa_Mi_Resolution_On_V7_I, colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone in V-I must resolve up to tonic\n";
           }
         }
 
-        if (counterpointRestrictions.Cadence_raised_LT && index <= dyads.length - 2 &&
-          dyads[index].isVchord() && dyads[index + 1].isIchord() && mode == "Minor" &&
-          dyads[index].topNote.sd == 7 && !dyads[index].topNote.accidental) {
-          error.annotate(errorMessage.Cadence_raised_LT, colorError);
+        if (require_Ti_Do_Resolution_On_V_I_checkbox.checked && index <= dyads.length - 2 &&
+          dyads[index].isVchord() && dyads[index + 1].isIchord() &&
+          dyads[index].topNote.sd == 7 && !dyads[index].isRaisedLT) {
+          error.annotate(errorMessage.Check_For_Raised_LT_On_V_I, colorError);
           errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone needs to be raised at cadence\n";
         }
 
-        if (counterpointRestrictions.Step_Back_After_Leap && index > 1) {
+        if (require_Step_Back_After_Leap_checkbox.checked && index > 1) {
           if (!stepsBackAfterBigLeap(dyads[index - 2].topNote, dyads[index - 1].topNote, dyads[index].topNote)) {
-            error.annotate(errorMessage.Step_Back_After_Leap, colorError);
+            error.annotate(errorMessage.Check_For_Step_Back_After_Leap, colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody should step back in opposite direction after a large leap\n";
           }
         }
@@ -862,8 +1439,5 @@ MuseScore {
     if (pitchDeviation < counterpointRestrictions.Min_Std_Dev) {
       errorDetails.text = errorDetails.text + "Melody should have larger range";
     }
-
-    errorDetails.visible = true;
-    Qt.quit();
   }
 }

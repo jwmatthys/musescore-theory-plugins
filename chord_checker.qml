@@ -1,9 +1,9 @@
 import MuseScore 1.0
 
 MuseScore {
-  menuPath: "Plugins.Proof Reading.Chords"
+  menuPath: "Plugins.Proof Reading.Chord Identifier"
   version: "0.1"
-  description: "Check intervals"
+  description: "This plugin runs on the current open document to label chords by root, quality, and figured bass inversion"
 
   function getNoteName(note_tpc) {
     var notename = "";
