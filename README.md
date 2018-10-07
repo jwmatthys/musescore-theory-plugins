@@ -95,11 +95,12 @@ no 7th        Seventh chord is missing the seventh
 no 5th        Chord is in inversion and is missing the fifth.
 X             Voice crossing error
 sp            Spacing error (more than an octave between soprano-alto or alto-tenor)
-LTx2          Leading tone is doubled
+raise LT      Leading tone needs to be raised
+LT doubled    Leading tone is doubled
 ||P5          Parallel 5ths (hidden 5ths will also be identified as ||P5)
 ||P8          Parallel octaves
 LT res        Leading tone needs to resolve up to tonic*
-tendency res  A tendency tone needs to resolve down (usually the 7th of a V7 chord)
+tendency      A tendency tone needs to resolve down (usually the 7th of a V7 chord)
 d7 res        Seventh of viio7 needs to resolve down
 s range       Soprano note is out of standard range (C4 - G5)
 a range       Alto note is out of standard range (G3 - D5)
