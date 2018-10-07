@@ -19,7 +19,7 @@ Now when you go to the Plugins menu the counterpoint, SATB, and interval, chord,
 
 ## Use
 
-### Counterpoint
+### Counterpoint Checker
 
 Enter your counterpoint melody on a grand staff and run the plugin from the Plugins menu to check your results. If you wish to indicate inversion in a tonal bass line, enter figured bass where necessary using ctrl-G.
 
@@ -27,7 +27,7 @@ At this time, the plugin really works best on straightforward species examples. 
 
 The modal species plugins currently only work with the cantus firmus below the counterpoint. (Look for new versions in the future that can work with the cf on top.) The rules come from Peter Schubert’s Modal Counterpoint, Renaissance Style and are generally in agreement with Tom Pankhurst's Guide to Schenkerian Analysis, http://www.schenkerguide.com/.
 
-### Counterpoint Proofreading Codes
+#### Counterpoint Proofreading Codes
 
 ```
 Code   Meaning
@@ -60,7 +60,7 @@ x      Forbidden offbeat notes in first species
 ||P5, ||P8    Parallel fifths or octaves
 ```
 
-### Other warning messages
+#### Other Counterpoint Warning Messages
 
 ```
 Too many consecutive 3rds or 6ths (up to 4 before warning)
@@ -70,9 +70,58 @@ Too many leaps (up to 50% before warning)
 Melody should have larger range (experimental warning – uses standard deviation of melody)
 ```
 
+### SATB Chorale Checker
+
+By default the plugin will run in Major mode. To check minor examples, set the “Lyricist” text field (Add → Text → Lyricist) to “Minor”.
+
+Roman numerals and figured bass should be entered as lyrics. Feel free to use superscript/subscript for figured bass, and to resize the lyrics as desired.
+
+There are multiple valid ways to enter the SATB voices:
+    • Soprano in layer 1, alto in layer 2 of top staff; tenor in layer 1, bass in layer 2 of bass staff
+    • Soprano and alto as chords in layer 1 of top staff; tenor and bass as layer 1 of bottom staff
+    • Soprano, alto, and tenor as layer 1 in top staff; bass as layer 1 of bottom staff (keyboard style)
+
+The plugin will do its best to guess where the voices are placed.
+
+#### SATB Proofreading Codes
+
+```
+Code      Meaning
+note err      One or more wrong notes in the chord
+inv           Incorrect inversion based on figured bass
+no root       Missing the root of the chord
+no 3rd        Missing the third of the chord
+no 7th        Seventh chord is missing the seventh
+no 5th        Chord is in inversion and is missing the fifth.
+X             Voice crossing error
+sp            Spacing error (more than an octave between soprano-alto or alto-tenor)
+LTx2          Leading tone is doubled
+||P5          Parallel 5ths (hidden 5ths will also be identified as ||P5)
+||P8          Parallel octaves
+LT res        Leading tone needs to resolve up to tonic*
+tendency res  A tendency tone needs to resolve down (usually the 7th of a V7 chord)
+d7 res        Seventh of viio7 needs to resolve down
+s range       Soprano note is out of standard range (C4 - G5)
+a range       Alto note is out of standard range (G3 - D5)
+t range       Tenor note is out of standard range (C3 - G4)
+b range       Bass note is out of standard range (E2 - C4)
+```
+
+#### Doubling Rules
+
+My only restriction about doubling is never double the leading tone. This plugin will not warn about irregular doubling unless you leave out an essential chord tone or have forbidden parallels.
+
+#### Leading Tone Resolution
+
+Many theory texts require that the leading tone resolve up to tonic on V-I or viio-I if the leading tone is in the soprano. In my theory classes I'm a little more hardcore: I say that the leading tone must resolve up no matter what voice it’s in. If you want to change it, you can open the plugin code in the Plugin Creator and change line 15 from true to false.
+
+## Clearing annotations
+
+Usually the score annotations added by any of the plugins can be removed with the undo command. Otherwise, right-click on any of the text and choose Select → All Similar Elements. The press Delete.
+
 ## Errors
 
-The plugin may malfunction if there are rests other than an initial rest in 2-4 species. The plugin also malfunctions if there is a bass note without a melody note present. I’m working on finding a way around these problems, which are mainly a problem with the MuseScore2 plugin framework.
+The counterpoint plugin may malfunction if there are rests other than an initial rest in 2-4 species. The counterpoint plugin also malfunctions if there is a bass note without a melody note present. I’m working on finding a way around these problems, which are mainly a problem with the MuseScore2 plugin framework.
 
 Please report any errors, questions, or suggestions to joel@matthysmusic.com
 
