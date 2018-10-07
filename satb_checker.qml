@@ -241,6 +241,14 @@ MuseScore {
       return sd;
     }
 
+    this.isLeadingTone = function(note) {
+      var isLT = null;
+      if (note) {
+        isLT = (5 == note.tpc - key);
+      }
+      return isLT;
+    }
+
     this.measure = measure; // type int
     this.soprano = null;
     this.alto = null;
@@ -282,8 +290,13 @@ MuseScore {
       this.alto.sd = this.getScaleDegree(this.alto);
       this.tenor.sd = this.getScaleDegree(this.tenor);
       this.bass.sd = this.getScaleDegree(this.bass);
+      this.soprano.lt = this.isLeadingTone(this.soprano);
+      this.alto.lt = this.isLeadingTone(this.alto);
+      this.tenor.lt = this.isLeadingTone(this.tenor);
+      this.bass.lt = this.isLeadingTone(this.bass);
       this.satb = [this.bass, this.tenor, this.alto, this.soprano];
       this.satb.sd = [this.bass.sd, this.tenor.sd, this.alto.sd, this.soprano.sd];
+      this.satb.lt = [this.bass.lt, this.tenor.lt, this.alto.lt, this.soprano.lt]
       this.satb.pitch = [this.bass.pitch, this.tenor.pitch, this.alto.pitch, this.soprano.pitch];
 
       if (this.soprano.pitch > 80 || this.soprano.pitch < 60) this.addError(this.measure, "S range", "soprano out of range");
@@ -315,7 +328,7 @@ MuseScore {
       this.checkDoubledLT = function() {
         var result = 0;
         for (var i = 0; i < 4; i++) {
-          if (this.satb[i].sd == 7) result++;
+          if (this.satb[i].lt) result++;
         }
         return result;
       }
@@ -372,8 +385,11 @@ MuseScore {
         this.wrongInversion = this.bass.sd != this.chordTones[this.inversion];
         this.wrongNote = this.checkNotes();
         if (this.romanNumeral == "V" || this.romanNumeral == "V7" || this.romanNumeral == "VIIO" || this.romanNumeral == "VIIO7") {
-          for (var a3 = 0; a3 < 4; a3++)
-            if (this.satb[a3].sd == 7) this.LTneedsResolving = a3;
+          for (var a3 = 0; a3 < 4; a3++) {
+            if (this.satb[a3].lt) this.LTneedsResolving = a3;
+            if (7 == this.satb[a3].sd && !this.satb[a3].lt)
+              this.addError(this.measure, "raise LT", "leading tone is not raised");
+          }
         }
         if (this.romanNumeral == "V7" || this.romanNumeral == "VIIO7") {
           for (var a4 = 0; a4 < 4; a4++)
@@ -399,7 +415,7 @@ MuseScore {
           if (this.missingSeventh) this.addError(this.measure, "no 7th", "chord is missing seventh");
           if (this.voiceCross) this.addError(this.measure, "X", "voice crossing");
           if (this.spacingError) this.addError(this.measure, "sp", "spacing greater than an octave in upper voices");
-          if (this.doubledLT > 1) this.addError(this.measure, "LTx" + this.doubledLT, "doubled leading tone");
+          if (this.doubledLT > 1) this.addError(this.measure, "LT doubled", "doubled leading tone");
         }
 
         var text = newElement(Element.STAFF_TEXT);
@@ -456,7 +472,7 @@ MuseScore {
             if (tetrachords[index - 1].seventhNeedsResolving) {
               var resolution = tetrachords[index].satb[tetrachords[index - 1].seventhNeedsResolving].sd;
               var whichVoice = individualVoice[tetrachords[index - 1].seventhNeedsResolving];
-              if (resolution != 3) tetrachords[index].addError(measure, "tendency res", whichVoice + ": tendency tone in " + tetrachords[index - 1].romanText + " chord needs to resolve down");
+              if (resolution != 3) tetrachords[index].addError(measure, "tendency", whichVoice + ": tendency tone in " + tetrachords[index - 1].romanText + " chord needs to resolve down");
             }
             if (tetrachords[index - 1].dim7NeedsResolving) {
               var resolution = tetrachords[index].satb[tetrachords[index - 1].dim7NeedsResolving].sd;
