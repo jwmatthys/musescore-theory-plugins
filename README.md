@@ -77,9 +77,9 @@ By default the plugin will run in Major mode. To check minor examples, set the �
 Roman numerals and figured bass should be entered as lyrics. Feel free to use superscript/subscript for figured bass, and to resize the lyrics as desired.
 
 There are multiple valid ways to enter the SATB voices:
-    • Soprano in layer 1, alto in layer 2 of top staff; tenor in layer 1, bass in layer 2 of bass staff
-    • Soprano and alto as chords in layer 1 of top staff; tenor and bass as layer 1 of bottom staff
-    • Soprano, alto, and tenor as layer 1 in top staff; bass as layer 1 of bottom staff (keyboard style)
+* Soprano in layer 1, alto in layer 2 of top staff; tenor in layer 1, bass in layer 2 of bass staff
+* Soprano and alto as chords in layer 1 of top staff; tenor and bass as layer 1 of bottom staff
+* Soprano, alto, and tenor as layer 1 in top staff; bass as layer 1 of bottom staff (keyboard style)
 
 The plugin will do its best to guess where the voices are placed.
 
@@ -125,6 +125,6 @@ The counterpoint plugin may malfunction if there are rests other than an initial
 
 Please report any errors, questions, or suggestions to joel@matthysmusic.com
 
-Donations
+## Donations
 
 If this plugin is useful to you, please consider buying me a coffee! https://ko-fi.com/D1D07KX5
