@@ -86,7 +86,7 @@ The plugin will do its best to guess where the voices are placed.
 #### SATB Proofreading Codes
 
 ```
-Code      Meaning
+Code          Meaning
 note err      One or more wrong notes in the chord
 inv           Incorrect inversion based on figured bass
 no root       Missing the root of the chord
