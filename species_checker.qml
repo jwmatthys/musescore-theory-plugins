@@ -875,18 +875,49 @@ MuseScore {
     this.errorYpos = 0; // type int
     this.measure = measure; // type int
 
+    this.getRoman = function() {
+      var sArray = new Array();
+      for (var i = 4; i < 6; i++) {
+        if (this.segment.elementAt(i) && this.segment.elementAt(i).lyrics) {
+          console.log("found lyrics in layer "+i);
+          var lyrics = this.segment.elementAt(i).lyrics;
+          for (var j = 0; j < lyrics.length; j++) {
+            var l = lyrics[j];
+            if (!l)
+              continue;
+            if (sArray[j] == undefined)
+              sArray[j] = "";
+            if (l.syllabic == Lyrics.SINGLE || l.syllabic == Lyrics.END)
+              sArray[j] += l.text + " ";
+            if (l.syllabic == Lyrics.MIDDLE || l.syllabic == Lyrics.BEGIN)
+              sArray[j] += l.text;
+          }
+        }
+      }
+      console.log("lyric: "+sArray.toString())
+      return sArray.toString();
+    }
+
     this.processFiguredBass = function() {
-      this.figuredBass = this.segment.annotations[0];
+      if (2 == modeComboBox.currentIndex) {
+        this.consonances = inversion.MODAL;
+        return;
+      }
+      var cleanedFBtext = "";
       if (!this.botNote) {
         this.figuredBass = this.previousFiguredBass;
         this.consonances = this.previousConsonances;
       } else {
+        cleanedFBtext = this.getRoman().replace(/[^234567\&\^\$]/g, '');
+        cleanedFBtext = cleanedFBtext.replace(/[\&]/g, '7'); // Sicilian numerals font uses these characters for superscript
+        cleanedFBtext = cleanedFBtext.replace(/[\^]/g, '6');
+        cleanedFBtext = cleanedFBtext.replace(/[\$]/g, '4');
+        console.log("cleanedFBtext: "+cleanedFBtext);
+        if (this.segment.annotations[0] && this.segment.annotations[0].type == Element.FIGURED_BASS) {
+          cleanedFBtext = this.segment.annotations[0].text.replace(/[^234567]/g, '');
+          console.log("FB replaced with "+cleanedFBtext);
+        }
         this.consonances = inversion.ROOT;
-        if (2 == modeComboBox.currentIndex) this.consonances = inversion.MODAL;
-      }
-      if (this.figuredBass && this.figuredBass.type == Element.FIGURED_BASS) {
-        var cleanedFBtext = this.figuredBass.text.replace(/[^234567]/g, '');
-        //console.log("figbass: "+cleanedFBtext+"\n");
         if (cleanedFBtext == "6" || cleanedFBtext == "63") this.consonances = inversion.FIRSTINV;
         if (cleanedFBtext == "64") this.consonances = inversion.SECONDINV;
         if (cleanedFBtext == "7" || cleanedFBtext == "753") this.consonances = inversion.ROOT7
