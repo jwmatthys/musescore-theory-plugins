@@ -119,6 +119,7 @@ MuseScore {
           forbid_Offbeats_checkbox.checked = false;
           forbid_Dissonant_Downbeats_checkbox.checked = false;
           forbid_Repeated_Note_Over_Barline_checkbox.checked = false;
+          forbid_Repeated_Offbeats_checkbox.checked = false;
           forbid_Leap_From_Dissonance_checkbox.checked = true;
           forbid_Leap_To_Dissonance_checkbox.checked = true;
           allow_Passing_Tone_checkbox.checked = true;
