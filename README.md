@@ -21,7 +21,9 @@ Now when you go to the Plugins menu the counterpoint, SATB, and interval, chord,
 
 ### Counterpoint Checker
 
-Enter your counterpoint melody on a grand staff and run the plugin from the Plugins menu to check your results. If you wish to indicate inversion in a tonal bass line, enter figured bass where necessary using ctrl-G.
+Enter your counterpoint melody on a grand staff and run the plugin from the Plugins menu to check your results. If you have selected one or more measures, the plugin will only check the selected measures. If no measures are selected, it will run on the entire file.
+
+If you wish to indicate inversion in a tonal bass line, enter figured bass where necessary using either MuseScore's figured bass options (ctrl-G) or as lyrics below the bass staff. You may enter roman numerals in the lyrics line as well, but this plugin will ignore them. Only figured bass numbers are read by the plugin, and only in tonal mode.
 
 At this time, the plugin really works best on straightforward species examples. The tonal species plugins have been tested successfully with all of the examples in Seth Monahan’s excellent Two-Part Harmonic Species Counterpoint: An Introduction, available at http://sethmonahan.com/TH101HarmonicCounterpoint.html. The procedures for the tonal plugin are derived from the rules laid out in this book.
 
@@ -72,7 +74,7 @@ Melody should have larger range (experimental warning – uses standard deviatio
 
 ### SATB Chorale Checker
 
-By default the plugin will run in Major mode. To check minor examples, set the “Lyricist” text field (Add → Text → Lyricist) to “Minor”.
+By default the plugin will run in Major mode. To check minor examples, set the “Lyricist” text field (Add → Text → Lyricist) to “Minor”. If you have selected one or more measures, the plugin will only check the selected measures. If no measures are selected, it will run on the entire file.
 
 Roman numerals and figured bass should be entered as lyrics. Feel free to use superscript/subscript for figured bass, and to resize the lyrics as desired.
 
@@ -114,7 +116,7 @@ My only restriction about doubling is never double the leading tone. This plugin
 
 #### Leading Tone Resolution
 
-Many theory texts require that the leading tone resolve up to tonic on V-I or viio-I if the leading tone is in the soprano. In my theory classes I'm a little more hardcore: I say that the leading tone must resolve up no matter what voice it’s in. If you want to change it, you can open the plugin code in the Plugin Creator and change line 15 from true to false.
+Many theory texts require that if the leading tone is in the soprano on V-I or viio-I it must resolve upward to 1/do. In my theory classes I'm more hardcore: I say that the leading tone must resolve up to 1/do no matter what voice it’s in. If you want to change it, you can open the plugin code in the Plugin Creator and change line 15 from true to false.
 
 ## Clearing annotations
 
@@ -122,7 +124,7 @@ Usually the score annotations added by any of the plugins can be removed with th
 
 ## Errors
 
-The counterpoint plugin may malfunction if there are rests other than an initial rest in 2-4 species. The counterpoint plugin also malfunctions if there is a bass note without a melody note present. I’m working on finding a way around these problems, which are mainly a problem with the MuseScore2 plugin framework.
+The species counterpoint plugin may malfunction if there are rests other than an initial rest in 2-4 species. The counterpoint plugin also malfunctions if there is a bass note without a melody note present. I’m working on finding a way around these problems, which are mainly a problem with the MuseScore2 plugin framework.
 
 Please report any errors, questions, or suggestions to joel@matthysmusic.com
 
