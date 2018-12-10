@@ -865,7 +865,7 @@ MuseScore {
     this.topNote = this.getNote(this.segment.elementAt(0));
     this.botNote = this.getNote(this.segment.elementAt(4));
     this.newTop = false;
-    this.newBot = false;
+    this.isDownbeat = false;
     this.prevTop = null; //type ELEMENT.CHORD
     this.prevBot = null; //type ELEMENT.CHORD
     this.previousFiguredBass = null; //type Element.FIGURED_BASS
@@ -880,7 +880,7 @@ MuseScore {
       var sArray = new Array();
       for (var i = 4; i < 6; i++) {
         if (this.segment.elementAt(i) && this.segment.elementAt(i).lyrics) {
-          console.log("found lyrics in layer "+i);
+          console.log("found lyrics in layer " + i);
           var lyrics = this.segment.elementAt(i).lyrics;
           for (var j = 0; j < lyrics.length; j++) {
             var l = lyrics[j];
@@ -895,7 +895,7 @@ MuseScore {
           }
         }
       }
-      console.log("lyric: "+sArray.toString())
+      console.log("lyric: " + sArray.toString())
       return sArray.toString();
     }
 
@@ -913,10 +913,10 @@ MuseScore {
         cleanedFBtext = cleanedFBtext.replace(/[\&]/g, '7'); // Sicilian numerals font uses these characters for superscript
         cleanedFBtext = cleanedFBtext.replace(/[\^]/g, '6');
         cleanedFBtext = cleanedFBtext.replace(/[\$]/g, '4');
-        console.log("cleanedFBtext: "+cleanedFBtext);
+        console.log("cleanedFBtext: " + cleanedFBtext);
         if (this.segment.annotations[0] && this.segment.annotations[0].type == Element.FIGURED_BASS) {
           cleanedFBtext = this.segment.annotations[0].text.replace(/[^234567]/g, '');
-          console.log("FB replaced with "+cleanedFBtext);
+          console.log("FB replaced with " + cleanedFBtext);
         }
         this.consonances = inversion.ROOT;
         if (cleanedFBtext == "6" || cleanedFBtext == "63") this.consonances = inversion.FIRSTINV;
@@ -935,10 +935,10 @@ MuseScore {
         this.topNote = this.prevTop; // top note tied over
         if (this.topNote) this.newTop = false;
       }
-      if (this.botNote) this.newBot = true;
+      if (this.botNote) this.isDownbeat = true;
       else {
         this.botNote = this.prevBot; // bottom note still sounding
-        if (this.botNote) this.newBot = false;
+        if (this.botNote) this.isDownbeat = false;
       }
       this.interval = new cInterval(this.topNote, this.botNote, key);
       //console.log("size: " + this.interval.size);
@@ -1052,13 +1052,31 @@ MuseScore {
     var prevDownbeat = 0;
     var measure = 1;
     var cursor = curScore.newCursor();
-    cursor.rewind(0);
+    var endTick;
+    var fullScore = false;
+    cursor.rewind(1);
+    if (!cursor.segment) { // no selection
+      fullScore = true;
+    } else {
+      cursor.rewind(2);
+      if (cursor.tick === 0) {
+        // this happens when the selection includes
+        // the last measure of the score.
+        // rewind(2) goes behind the last segment (where
+        // there's none) and sets tick=0
+        endTick = curScore.lastSegment.tick + 1;
+      } else {
+        endTick = cursor.tick;
+      }
+    }
+
+    cursor.rewind(1);
     key = cursor.keySignature + 14;
     if (1 == modeComboBox.currentIndex) key += 3;
     var segment = cursor.segment;
 
     // Process all dyads and mark intervals
-    for (var index = 0; segment;) {
+    for (var index = 0; (segment && (fullScore || cursor.tick < endTick));) {
       //while (segment) {
       var topElem = segment.elementAt(0);
       var botElem = segment.elementAt(4);
@@ -1088,7 +1106,10 @@ MuseScore {
       segment = segment.next;
     }
 
-    cursor.rewind(0);
+    cursor.rewind(1);
+    var lastConsonance = null;
+    var lastDownbeat = null;
+
     for (var index = 0; index < dyads.length; index++) {
       // Here come the verticality error checks!
       var error = new counterpointError(cursor, dyads[index]);
@@ -1107,7 +1128,7 @@ MuseScore {
       }
 
       if (forbid_Unison_On_Downbeat_checkbox.checked) {
-        if (dyads[index].interval.size == 1 && dyads[index].newBot &&
+        if (dyads[index].interval.size == 1 && dyads[index].isDownbeat &&
           index < dyads.length - 1 && index > 0) {
           error.annotate(errorMessage.Forbid_Unison_On_Downbeat, colorError);
           errorDetails.text += "Measure " + dyads[index].measure + ": P1 may only occur at the start, end, or offbeat\n";
@@ -1116,7 +1137,7 @@ MuseScore {
 
       if (dyads[index].topNote && dyads[index].botNote) {
         if (forbid_Offbeats_checkbox.checked) {
-          if (!dyads[index].newBot) {
+          if (!dyads[index].isDownbeat) {
             error.annotate(errorMessage.Forbid_Offbeats, colorError);
             errorDetails.text += "Measure " + dyads[index].measure + ": First species allows only one melody note per bass note\n";
           }
@@ -1125,7 +1146,7 @@ MuseScore {
         if (index > 0 && index < (dyads.length - 1)) // Let's go after those triples (PT, NT, app, ret, sus, apt)
         {
           if (allow_Passing_Tone_checkbox.checked) {
-            if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
+            if (dyads[index].nct && dyads[index].botNote && !dyads[index].isDownbeat) {
               if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
                 error.annotate(errorMessage.Allow_Passing_Tone, colorCT);
                 dyads[index].permittedDissonance = true;
@@ -1134,7 +1155,7 @@ MuseScore {
           }
 
           if (allow_Passing_Tone_checkbox.checked && !forbid_Dissonant_Downbeats_checkbox.checked) {
-            if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
+            if (dyads[index].nct && dyads[index].botNote && dyads[index].isDownbeat) {
               if (isPassing(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
                 error.annotate(errorMessage.Allow_Accented_Passing_Tone, colorCT);
                 dyads[index].permittedDissonance = true;
@@ -1143,7 +1164,7 @@ MuseScore {
           }
 
           if (allow_Neighbor_Tone_checkbox.checked) {
-            if (dyads[index].nct && dyads[index].botNote && !dyads[index].newBot) {
+            if (dyads[index].nct && dyads[index].botNote && !dyads[index].isDownbeat) {
               if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
                 error.annotate(errorMessage.Allow_Neighbor_Tone, colorCT);
                 dyads[index].permittedDissonance = true;
@@ -1152,158 +1173,169 @@ MuseScore {
           }
 
           if (allow_Neighbor_Tone_checkbox.checked && !forbid_Dissonant_Downbeats_checkbox.checked) {
-            if (dyads[index].nct && dyads[index].botNote && dyads[index].newBot) {
+            if (dyads[index].nct && dyads[index].botNote && dyads[index].isDownbeat) {
               if (isNeighbor(dyads[index - 1].topNote, dyads[index].topNote, dyads[index + 1].topNote)) {
                 error.annotate(errorMessage.Allow_Accented_Neighbor, colorCT);
                 dyads[index].permittedDissonance = true;
               }
             }
           }
-        }
 
-        if (allow_Nota_Cambiata_checkbox.checked && index > 0 && index < dyads.length - 3) {
-          var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
-          if (int1.direction == -1 && int2.direction == -1 && int3.direction == 1 &&
-            dyads[index - 1].newBot && !dyads[index].newBot && !dyads[index + 1].newBot && !dyads[index + 2].newBot &&
-            ((dyads[index - 1].interval.size == 8 && dyads[index].interval.size == 7 &&
-                dyads[index + 1].interval.size == 5 && dyads[index + 2].interval.size == 6) ||
-              (dyads[index - 1].interval.size == 6 && dyads[index].interval.size == 5 &&
-                dyads[index + 1].interval.size == 3 && dyads[index + 2].interval.size == 4))) {
-            error.annotate(errorMessage.Allow_Nota_Cambiata, colorCT);
-            dyads[index].permittedDissonance = true;
-            dyads[index + 1].permittedDissonance = true;
-            dyads[index + 2].permittedDissonance = true;
-          }
-        }
-
-        if (allow_Double_Neighbor_checkbox.checked && index > 0 && index < dyads.length - 4) {
-          var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
-          var int4 = new cInterval(dyads[index + 2].topNote, dyads[index + 3].topNote);
-          var dir1 = int1.direction;
-          if (dir1 != 0 && int1.direction == dir1 && int2.direction == dir1 * -1 && int3.direction == dir1 && int4.direction == dir1 &&
-            dyads[index - 1].newBot && !dyads[index].newBot && !dyads[index + 1].newBot && !dyads[index + 2].newBot && dyads[index + 3].newBot &&
-            int1.size == 2 && int2.size == 3 && int3.size == 2 && int4.size == 2 &&
-            !dyads[index - 1].nct && !dyads[index + 3].nct) {
-            error.annotate(errorMessage.Allow_Double_Neighbor, colorCT);
-            dyads[index].permittedDissonance = true;
-            dyads[index + 1].permittedDissonance = true;
-            dyads[index + 2].permittedDissonance = true;
-          }
-        }
-
-        if (allow_Suspension_checkbox.checked && index > 0 && index < dyads.length - 2) {
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
-            !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
-            dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
-            melodicInterval2.direction < 0) {
-            error.annotate(errorMessage.Allow_Suspension, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-        if (allow_Retardation_checkbox.checked && index > 0 && index < dyads.length - 2) {
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
-            !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].newBot &&
-            dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
-            melodicInterval2.direction > 0 && melodicInterval2.quality == intervalQual.MINOR) {
-            error.annotate(errorMessage.Allow_Retardation, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-        if (index > 0 && index < (dyads.length - 2) && allow_Appoggiatura_checkbox.checked) {
-          var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (melodicInterval.direction > 0 && melodicInterval.size > 2 && dyads[index].newBot && dyads[index].nct &&
-            melodicInterval2.direction < 0 && melodicInterval2.size == 2 && !dyads[index + 1].nct) {
-            error.annotate(errorMessage.Allow_Appoggiatura, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-        if (index > 0 && index < (dyads.length - 2) && allow_Appoggiatura_Down_checkbox.checked) {
-          var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (melodicInterval.direction < 0 && melodicInterval.size > 2 && !dyads[index + 1].nct && dyads[index].newBot &&
-            melodicInterval2.direction > 0 && melodicInterval2.size == 2 && melodicInterval2.quality == intervalQual.MINOR) {
-            error.annotate(errorMessage.Allow_Downward_Appoggiatura, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-        if (index > 0 && index < (dyads.length - 2) && allow_Escape_Tone_checkbox.checked) {
-          var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
-          var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
-          if (melodicInterval.size == 2 && !!dyads[index - 1].nct && dyads[index].nct &&
-            !dyads[index].newBot && !dyads[index + 1].nct &&
-            melodicInterval2.direction != 0 && melodicInterval.direction == -1 * melodicInterval2.direction) {
-            error.annotate(errorMessage.Allow_Escape_Tone, colorCT);
-            dyads[index].permittedDissonance = true;
-          }
-        }
-
-
-        if (forbid_Dissonant_Downbeats_checkbox.checked) {
-          if (dyads[index].newBot && dyads[index].isDissonant()) {
-            error.annotate(errorMessage.Forbid_Dissonant_Downbeats, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " over bass note change\n";
-          }
-        }
-
-        if (forbid_All_Dissonance_checkbox.checked) {
-          if (!dyads[index].newBot && dyads[index].isDissonant()) {
-            error.annotate(errorMessage.Forbid_All_Dissonance, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " off the beat\n";
-          }
-        }
-
-        if (forbid_Voice_Crossing_checkbox.checked) {
-          if (dyads[index].voiceCross()) {
-            error.annotate(errorMessage.Forbid_Voice_Crossing, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Melody crosses bass\n";
-          }
-        }
-
-        if (forbid_Doubled_LT_checkbox.checked) {
-          if (dyads[index].topNote.sd == 7 && dyads[index].botNote.sd == 7) {
-            error.annotate(errorMessage.Forbid_Doubled_LT, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Doubled Leading Tone\n";
-          }
-        }
-
-        if (forbid_Accidentals_checkbox.checked && dyads[index].topNote.accidental) {
-          if (!allow_Raised_La_Ti_Minor_checkbox.checked) {
-            error.annotate(errorMessage.Forbid_Accidentals, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Accidentals are restricted in this species\n";
-            dyads[index].topNote.accidental.color = "#ff0000";
-          } else if (!dyads[index].isRaised6or7) {
-            error.annotate(errorMessage.Forbid_Accidentals, colorError);
-            errorDetails.text += "Measure " + dyads[index].measure + ": Only raised scale degrees 6 & 7 can be altered with accidentals in this species\n";
-            dyads[index].topNote.accidental.color = "#ff0000";
-          }
-        }
-
-        if (forbid_Consecutive_Downbeat_Parallels_checkbox.checked) {
-          if (dyads[index].newBot) {
-            if (index - prevDownbeat > 1 &&
-              dyads[prevDownbeat].interval.isPerfect() &&
-              dyads[index].interval.isPerfect() &&
-              dyads[prevDownbeat].interval.size == dyads[index].interval.size &&
-              motion(dyads[prevDownbeat], dyads[index]) == tonalMotion.SIMILAR) {
-              error.annotate(errorMessage.Forbid_Consecutive_Downbeat_Parallels + dyads[index].interval.toString(), colorError);
-              errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + " on consecutive downbeats\n";
+          if (allow_Nota_Cambiata_checkbox.checked && index > 0 && index < dyads.length - 3) {
+            var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+            var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+            var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
+            if (int1.direction == -1 && int2.direction == -1 && int3.direction == 1 &&
+              dyads[index - 1].isDownbeat && !dyads[index].isDownbeat && !dyads[index + 1].isDownbeat && !dyads[index + 2].isDownbeat &&
+              ((dyads[index - 1].interval.size == 8 && dyads[index].interval.size == 7 &&
+                  dyads[index + 1].interval.size == 5 && dyads[index + 2].interval.size == 6) ||
+                (dyads[index - 1].interval.size == 6 && dyads[index].interval.size == 5 &&
+                  dyads[index + 1].interval.size == 3 && dyads[index + 2].interval.size == 4))) {
+              error.annotate(errorMessage.Allow_Nota_Cambiata, colorCT);
+              dyads[index].permittedDissonance = true;
+              dyads[index + 1].permittedDissonance = true;
+              dyads[index + 2].permittedDissonance = true;
             }
-            prevDownbeat = index;
+          }
+
+          if (allow_Double_Neighbor_checkbox.checked && index > 0 && index < dyads.length - 4) {
+            var int1 = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+            var int2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+            var int3 = new cInterval(dyads[index + 1].topNote, dyads[index + 2].topNote);
+            var int4 = new cInterval(dyads[index + 2].topNote, dyads[index + 3].topNote);
+            var dir1 = int1.direction;
+            if (dir1 != 0 && int1.direction == dir1 && int2.direction == dir1 * -1 && int3.direction == dir1 && int4.direction == dir1 &&
+              dyads[index - 1].isDownbeat && !dyads[index].isDownbeat && !dyads[index + 1].isDownbeat && !dyads[index + 2].isDownbeat && dyads[index + 3].isDownbeat &&
+              int1.size == 2 && int2.size == 3 && int3.size == 2 && int4.size == 2 &&
+              !dyads[index - 1].nct && !dyads[index + 3].nct) {
+              error.annotate(errorMessage.Allow_Double_Neighbor, colorCT);
+              dyads[index].permittedDissonance = true;
+              dyads[index + 1].permittedDissonance = true;
+              dyads[index + 2].permittedDissonance = true;
+            }
+          }
+
+          if (allow_Suspension_checkbox.checked && index > 0 && index < dyads.length - 2) {
+            var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+            if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
+              !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].isDownbeat &&
+              dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
+              melodicInterval2.direction < 0) {
+              error.annotate(errorMessage.Allow_Suspension, colorCT);
+              dyads[index].permittedDissonance = true;
+            }
+          }
+
+          if (allow_Retardation_checkbox.checked && index > 0 && index < dyads.length - 2) {
+            var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+            if (dyads[index - 1].topNote && dyads[index].topNote && dyads[index + 1].topNote &&
+              !dyads[index - 1].nct && !dyads[index + 1].nct && dyads[index].isDownbeat &&
+              dyads[index - 1].topNote.pitch == dyads[index].topNote.pitch && melodicInterval2.size == 2 &&
+              melodicInterval2.direction > 0 && melodicInterval2.quality == intervalQual.MINOR) {
+              error.annotate(errorMessage.Allow_Retardation, colorCT);
+              dyads[index].permittedDissonance = true;
+            }
+          }
+
+          if (index > 0 && index < (dyads.length - 2) && allow_Appoggiatura_checkbox.checked) {
+            var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+            var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+            if (melodicInterval.direction > 0 && melodicInterval.size > 2 && dyads[index].isDownbeat && dyads[index].nct &&
+              melodicInterval2.direction < 0 && melodicInterval2.size == 2 && !dyads[index + 1].nct) {
+              error.annotate(errorMessage.Allow_Appoggiatura, colorCT);
+              dyads[index].permittedDissonance = true;
+            }
+          }
+
+          if (index > 0 && index < (dyads.length - 2) && allow_Appoggiatura_Down_checkbox.checked) {
+            var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+            var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+            if (melodicInterval.direction < 0 && melodicInterval.size > 2 && !dyads[index + 1].nct && dyads[index].isDownbeat &&
+              melodicInterval2.direction > 0 && melodicInterval2.size == 2 && melodicInterval2.quality == intervalQual.MINOR) {
+              error.annotate(errorMessage.Allow_Downward_Appoggiatura, colorCT);
+              dyads[index].permittedDissonance = true;
+            }
+          }
+
+          if (index > 0 && index < (dyads.length - 2) && allow_Escape_Tone_checkbox.checked) {
+            var melodicInterval = new cInterval(dyads[index - 1].topNote, dyads[index].topNote);
+            var melodicInterval2 = new cInterval(dyads[index].topNote, dyads[index + 1].topNote);
+            if (melodicInterval.size == 2 && !!dyads[index - 1].nct && dyads[index].nct &&
+              !dyads[index].isDownbeat && !dyads[index + 1].nct &&
+              melodicInterval2.direction != 0 && melodicInterval.direction == -1 * melodicInterval2.direction) {
+              error.annotate(errorMessage.Allow_Escape_Tone, colorCT);
+              dyads[index].permittedDissonance = true;
+            }
+          }
+
+          if (forbid_Dissonant_Downbeats_checkbox.checked) {
+            if (dyads[index].isDownbeat && dyads[index].isDissonant()) {
+              error.annotate(errorMessage.Forbid_Dissonant_Downbeats, colorError);
+              errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " over bass note change\n";
+            }
+          }
+
+          if (forbid_All_Dissonance_checkbox.checked) {
+            if (!dyads[index].isDownbeat && dyads[index].isDissonant()) {
+              error.annotate(errorMessage.Forbid_All_Dissonance, colorError);
+              errorDetails.text += "Measure " + dyads[index].measure + ": Dissonant interval " + dyads[index].interval.toString() + " off the beat\n";
+            }
+          }
+
+          if (forbid_Voice_Crossing_checkbox.checked) {
+            if (dyads[index].voiceCross()) {
+              error.annotate(errorMessage.Forbid_Voice_Crossing, colorError);
+              errorDetails.text += "Measure " + dyads[index].measure + ": Melody crosses bass\n";
+            }
+          }
+
+          if (forbid_Doubled_LT_checkbox.checked) {
+            if (dyads[index].topNote.sd == 7 && dyads[index].botNote.sd == 7) {
+              error.annotate(errorMessage.Forbid_Doubled_LT, colorError);
+              errorDetails.text += "Measure " + dyads[index].measure + ": Doubled Leading Tone\n";
+            }
+          }
+
+          if (forbid_Accidentals_checkbox.checked && dyads[index].topNote.accidental) {
+            if (!allow_Raised_La_Ti_Minor_checkbox.checked) {
+              error.annotate(errorMessage.Forbid_Accidentals, colorError);
+              errorDetails.text += "Measure " + dyads[index].measure + ": Accidentals are restricted in this species\n";
+              dyads[index].topNote.accidental.color = "#ff0000";
+            } else if (!dyads[index].isRaised6or7) {
+              error.annotate(errorMessage.Forbid_Accidentals, colorError);
+              errorDetails.text += "Measure " + dyads[index].measure + ": Only raised scale degrees 6 & 7 can be altered with accidentals in this species\n";
+              dyads[index].topNote.accidental.color = "#ff0000";
+            }
+          }
+
+          if (forbid_Consecutive_Downbeat_Parallels_checkbox.checked && dyads[index].isDownbeat) {
+            if (lastDownbeat && lastDownbeat.interval) {
+              if (dyads[index].interval.toString() == lastDownbeat.interval.toString() &&
+                motion(lastDownbeat, dyads[index]) == tonalMotion.SIMILAR) {
+                error.annotate(errorMessage.Forbid_Consecutive_Downbeat_Parallels + dyads[index].interval.toString(), colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + " on consecutive downbeats\n";
+              }
+            }
+            lastDownbeat = dyads[index];
+          }
+
+          if (lastConsonance && lastConsonance.interval) {
+            if (dyads[index].interval.isPerfect() && dyads[index].interval.toString() == lastConsonance.interval.toString()) {
+              if (forbid_Consecutive_Parallels_checkbox.checked && motion(dyads[index], lastConsonance) == tonalMotion.SIMILAR) {
+                error.annotate(errorMessage.Forbid_Consecutive_Perfect_Parallels + dyads[index].interval.toString(), colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + "\n";
+              } else if (forbid_Hidden_Parallels_checkbox.checked && motion(dyads[index], lastConsonance) == tonalMotion.CONTRARY) {
+                error.annotate(errorMessage.Forbid_Hidden_Parallels + dyads[index].interval.toString(), colorError);
+                errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Hidden " + dyads[index].interval.toString() + "\n";
+              }
+            }
+          }
+          if (!dyads[index].nct) {
+            lastConsonance = dyads[index];
           }
         }
-
       }
+
 
       // Now the checks of 2 consecutive notes
       if (index > 0) {
@@ -1324,15 +1356,6 @@ MuseScore {
             errorDetails.text += "Measure " + dyads[index].measure + ": Melody leaps " + melodicInterval.toString() + "\n";
           }
         }
-        if (forbid_Consecutive_Parallels_checkbox.checked) {
-          if (dyads[index].interval.isPerfect() &&
-            dyads[index - 1].interval.isPerfect() &&
-            dyads[index].interval.size == dyads[index - 1].interval.size &&
-            motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
-            error.annotate(errorMessage.Forbid_Consecutive_Perfect_Parallels + dyads[index].interval.toString(), colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + "\n";
-          }
-        }
         if (forbid_Direct_Fifths_checkbox.checked) {
           if (dyads[index].interval.size == 5 &&
             dyads[index - 1].interval.size == 5 &&
@@ -1340,15 +1363,6 @@ MuseScore {
             motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR) {
             error.annotate(errorMessage.Forbid_Direct_Fifths, colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Consecutive 5ths in same direction\n";
-          }
-        }
-        if (forbid_Hidden_Parallels_checkbox.checked) {
-          if (dyads[index].newBot && dyads[index].interval.isPerfect() &&
-            dyads[index - 1].interval.isPerfect() &&
-            dyads[index].interval.size == dyads[index - 1].interval.size &&
-            motion(dyads[index], dyads[index - 1]) == tonalMotion.CONTRARY) {
-            error.annotate(errorMessage.Forbid_Hidden_Parallels + dyads[index].interval.toString(), colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Hidden " + dyads[index].interval.toString() + "\n";
           }
         }
         if (forbid_Leap_To_Perfect_in_Similar_Motion_checkbox.checked) {
@@ -1384,17 +1398,17 @@ MuseScore {
 
         if (forbid_Repeated_Offbeats_checkbox.checked) {
           if (dyads[index].topNote && dyads[index - 1].topNote &&
-            dyads[index].botNote && !dyads[index].newBot &&
+            dyads[index].botNote && !dyads[index].isDownbeat &&
             dyads[index].topNote.pitch == dyads[index - 1].topNote.pitch &&
             dyads[index].topNote.tpc == dyads[index - 1].topNote.tpc) {
             error.annotate(errorMessage.Forbid_Repeated_Offbeats, colorError);
-            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Forbid_Offbeats melody note repeats\n";
+            errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Offbeat melody note repeats\n";
           }
         }
 
         if (forbid_Repeated_Note_Over_Barline_checkbox.checked) {
           if (dyads[index].topNote && dyads[index - 1].topNote &&
-            dyads[index].botNote && dyads[index].newBot &&
+            dyads[index].botNote && dyads[index].isDownbeat &&
             dyads[index].topNote.pitch == dyads[index - 1].topNote.pitch &&
             dyads[index].topNote.tpc == dyads[index - 1].topNote.tpc &&
             !dyads[index].permittedDissonance) {
