@@ -439,12 +439,34 @@ MuseScore {
     if (curScore.poet.toUpperCase() == "MINOR") {
       mode = "Minor";
     }
-    cursor.rewind(0);
+    var endTick;
+    var fullScore = false;
+    cursor.rewind(1);
+    if (!cursor.segment) { // no selection
+      fullScore = true;
+    } else {
+      cursor.rewind(2);
+      if (cursor.tick === 0) {
+        // this happens when the selection includes
+        // the last measure of the score.
+        // rewind(2) goes behind the last segment (where
+        // there's none) and sets tick=0
+        endTick = curScore.lastSegment.tick + 1;
+      } else {
+        endTick = cursor.tick;
+      }
+    }
+    if (fullScore) {
+      cursor.rewind(0);
+    } else {
+      cursor.rewind(1);
+    }
     key = cursor.keySignature + 14;
     if (mode == "Minor") key += 3;
     var segment = cursor.segment;
+    var index = 0;
 
-    for (var index = 0; segment;) {
+    while (segment && (fullScore || cursor.tick < endTick)) {
 
       var treble = segment.elementAt(0);
       var bass = segment.elementAt(4);
