@@ -880,7 +880,6 @@ MuseScore {
       var sArray = new Array();
       for (var i = 4; i < 6; i++) {
         if (this.segment.elementAt(i) && this.segment.elementAt(i).lyrics) {
-          console.log("found lyrics in layer " + i);
           var lyrics = this.segment.elementAt(i).lyrics;
           for (var j = 0; j < lyrics.length; j++) {
             var l = lyrics[j];
@@ -895,7 +894,6 @@ MuseScore {
           }
         }
       }
-      console.log("lyric: " + sArray.toString())
       return sArray.toString();
     }
 
@@ -913,10 +911,8 @@ MuseScore {
         cleanedFBtext = cleanedFBtext.replace(/[\&]/g, '7'); // Sicilian numerals font uses these characters for superscript
         cleanedFBtext = cleanedFBtext.replace(/[\^]/g, '6');
         cleanedFBtext = cleanedFBtext.replace(/[\$]/g, '4');
-        console.log("cleanedFBtext: " + cleanedFBtext);
         if (this.segment.annotations[0] && this.segment.annotations[0].type == Element.FIGURED_BASS) {
           cleanedFBtext = this.segment.annotations[0].text.replace(/[^234567]/g, '');
-          console.log("FB replaced with " + cleanedFBtext);
         }
         this.consonances = inversion.ROOT;
         if (cleanedFBtext == "6" || cleanedFBtext == "63") this.consonances = inversion.FIRSTINV;
@@ -941,9 +937,7 @@ MuseScore {
         if (this.botNote) this.isDownbeat = false;
       }
       this.interval = new cInterval(this.topNote, this.botNote, key);
-      //console.log("size: " + this.interval.size);
       this.nct = (this.consonances.indexOf(this.interval.size) == -1);
-      //console.log("interval: " + this.interval.toString() + " = NCT? " + this.nct);
     }
 
     this.isDissonant = function() {
@@ -1034,7 +1028,6 @@ MuseScore {
     if (dyad1.topNote && dyad2.topNote) topMotion = dyad2.topNote.pitch - dyad1.topNote.pitch; // 0 if oblique, + if ascending, - if descending
     if (dyad1.botNote && dyad2.botNote) botMotion = dyad2.botNote.pitch - dyad1.botNote.pitch;
     var direction = topMotion * botMotion; // + if similar, - if contrary, 0 if oblique
-    //console.log("topMotion: "+topMotion+", botMotion: "+botMotion+", direction: "+direction);
     if (direction <= 0) return tonalMotion.CONTRARY;
     if (direction == 0) return tonalMotion.OBLIQUE;
     return tonalMotion.SIMILAR;
@@ -1070,14 +1063,17 @@ MuseScore {
       }
     }
 
-    cursor.rewind(1);
+    if (fullScore) {
+      cursor.rewind(0);
+    } else {
+      cursor.rewind(1);
+    }
     key = cursor.keySignature + 14;
     if (1 == modeComboBox.currentIndex) key += 3;
     var segment = cursor.segment;
-
+    var index = 0;
     // Process all dyads and mark intervals
-    for (var index = 0; (segment && (fullScore || cursor.tick < endTick));) {
-      //while (segment) {
+    while (segment && (fullScore || cursor.tick < endTick)) {
       var topElem = segment.elementAt(0);
       var botElem = segment.elementAt(4);
 
@@ -1106,7 +1102,11 @@ MuseScore {
       segment = segment.next;
     }
 
-    cursor.rewind(1);
+    if (fullScore) {
+      cursor.rewind(0);
+    } else {
+      cursor.rewind(1);
+    }
     var lastConsonance = null;
     var lastDownbeat = null;
 
