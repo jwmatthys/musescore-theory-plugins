@@ -1308,9 +1308,12 @@ MuseScore {
             }
           }
 
-          if (forbid_Consecutive_Downbeat_Parallels_checkbox.checked && dyads[index].isDownbeat) {
+          // don't bother with this check in first species
+          if (forbid_Consecutive_Downbeat_Parallels_checkbox.checked && dyads[index].isDownbeat &&
+          speciesComboBox.currentIndex != 0) {
             if (lastDownbeat && lastDownbeat.interval) {
               if (dyads[index].interval.toString() == lastDownbeat.interval.toString() &&
+                dyads[index].interval.isPerfect() &&
                 motion(lastDownbeat, dyads[index]) == tonalMotion.SIMILAR) {
                 error.annotate(errorMessage.Forbid_Consecutive_Downbeat_Parallels + dyads[index].interval.toString(), colorError);
                 errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + " on consecutive downbeats\n";
@@ -1320,7 +1323,8 @@ MuseScore {
           }
 
           if (lastConsonance && lastConsonance.interval) {
-            if (dyads[index].interval.isPerfect() && dyads[index].interval.toString() == lastConsonance.interval.toString()) {
+            if (dyads[index].interval.isPerfect() && dyads[index].interval.toString() == lastConsonance.interval.toString() &&
+              dyads[index].interval.isPerfect()) {
               if (forbid_Consecutive_Parallels_checkbox.checked && motion(dyads[index], lastConsonance) == tonalMotion.SIMILAR) {
                 error.annotate(errorMessage.Forbid_Consecutive_Perfect_Parallels + dyads[index].interval.toString(), colorError);
                 errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Parallel " + dyads[index].interval.toString() + "\n";
@@ -1369,6 +1373,7 @@ MuseScore {
           if (dyads[index].interval.isPerfect()) {
             var melodicInterval = new cInterval(dyads[index].topNote, dyads[index - 1].topNote);
             if (motion(dyads[index], dyads[index - 1]) == tonalMotion.SIMILAR &&
+              dyads[index -1 ].interval.size != dyads[index].interval.size &&
               melodicInterval.size > 2) {
               error.annotate(errorMessage.Forbid_Leap_To_Perfect_in_Similar_Motion, colorError);
               errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Melody leaps to " + dyads[index].interval.toString() + " in similar motion\n";
@@ -1417,12 +1422,14 @@ MuseScore {
           }
         }
 
+        console.log("scale degrees: " + dyads[index - 1].topNote.sd + " - " + dyads[index].topNote.sd);
+
         if (dyads[index - 1].isVchord() && dyads[index].isIchord()) {
           if (require_Fa_Mi_Resolution_On_V7_I_checkbox.checked && dyads[index - 1].topNote.sd == 4 && dyads[index].topNote.sd != 3) {
             error.annotate(errorMessage.Check_For_Fa_Mi_Resolution_On_V7_I, colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Seventh of V7 must resolve down by step\n";
           } else if (dyads[index - 1].topNote.sd == 7 && dyads[index].topNote.sd != 1 && dyads[index].topNote.sd != dyads[index - 1].topNote.sd) {
-            error.annotate(errorMessage.Check_For_Fa_Mi_Resolution_On_V7_I, colorError);
+            error.annotate(errorMessage.Check_For_Ti_Do_Resolution_On_V_I, colorError);
             errorDetails.text = errorDetails.text + "Measure " + dyads[index].measure + ": Leading tone in V-I must resolve up to tonic\n";
           }
         }
