@@ -1,6 +1,6 @@
 import QtQuick 2.0
 import QtQuick.Dialogs 1.1
-import MuseScore 1.0
+import MuseScore 3.0
 
 MuseScore {
   menuPath: "Plugins.Proof Reading.SATB Checker"
@@ -419,8 +419,8 @@ MuseScore {
         }
 
         var text = newElement(Element.STAFF_TEXT);
-        text.pos.y = -2.5 * (this.errorCount - 1);
-        text.pos.x = 0;
+        //text.pos.y = -2.5 * (this.errorCount - 1);
+        //text.pos.x = 0;
         text.text = this.errorText;
         text.color = colorError;
         cursor.add(text);
@@ -436,9 +436,10 @@ MuseScore {
     var tetrachords = [];
     var measure = 1;
     var cursor = curScore.newCursor();
-    if (curScore.poet.toUpperCase() == "MINOR") {
-      mode = "Minor";
-    }
+    console.log(curScore.title);
+    //if (curScore.poet.toUpperCase() == "MINOR") {
+    //  mode = "Minor";
+    //}
     var endTick;
     var fullScore = false;
     cursor.rewind(1);

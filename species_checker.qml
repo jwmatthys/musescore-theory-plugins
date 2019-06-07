@@ -2,7 +2,7 @@ import QtQuick 2.2
 import QtQuick.Dialogs 1.1
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
-import MuseScore 1.0
+import MuseScore 3.0
 
 MuseScore {
   menuPath: "Plugins.Proof Reading.Species Counterpoint Checker"
@@ -595,7 +595,7 @@ MuseScore {
     anchors.rightMargin: 10
     onClicked: {
       goSpecies();
-      curScore.doLayout();
+      //curScore.doLayout();
       curScore.endCmd();
       //window.visible = false;
       errorDetails.visible = true;
@@ -1012,8 +1012,8 @@ MuseScore {
 
     this.annotate = function(msg, col) {
       var text = newElement(Element.STAFF_TEXT);
-      text.pos.y = note.errorYpos;
-      text.pos.x = 0;
+      //text.pos.y = note.errorYpos;
+      //text.pos.x = 0;
       text.text = msg;
       text.color = col;
       cursor.add(text);
@@ -1090,7 +1090,7 @@ MuseScore {
         // Label intervals
         if (show_Intervals_checkbox.checked) {
           var text = newElement(Element.STAFF_TEXT);
-          text.pos.y = 10;
+          //text.pos.y = 10;
           text.text = dyads[index].interval.toString();
           if (dyads[index].interval.isPerfect()) text.color = colorPerf;
           if (dyads[index].nct) text.color = colorNCT;
@@ -1422,7 +1422,7 @@ MuseScore {
           }
         }
 
-        console.log("scale degrees: " + dyads[index - 1].topNote.sd + " - " + dyads[index].topNote.sd);
+        //console.log("scale degrees: " + dyads[index - 1].topNote.sd + " - " + dyads[index].topNote.sd);
 
         if (dyads[index - 1].isVchord() && dyads[index].isIchord()) {
           if (require_Fa_Mi_Resolution_On_V7_I_checkbox.checked && dyads[index - 1].topNote.sd == 4 && dyads[index].topNote.sd != 3) {

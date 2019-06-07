@@ -1,4 +1,4 @@
-import MuseScore 1.0
+import MuseScore 3.0
 
 MuseScore {
   menuPath: "Exercises.Check.Check Interval ID Exercises"
@@ -110,7 +110,7 @@ MuseScore {
             text.color = "#00BB00";
             count++;
           }
-          text.pos.y = -2;
+          //text.pos.y = -2;
           cursor.add(text);
         }
       }

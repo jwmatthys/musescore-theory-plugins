@@ -1,4 +1,4 @@
-import MuseScore 1.0
+import MuseScore 3.0
 
 MuseScore {
   menuPath: "Plugins.Proof Reading.Pop Chord Checker"
@@ -123,7 +123,7 @@ MuseScore {
           var chordName = checkTriad(chord);
           var text = newElement(Element.STAFF_TEXT);
           text.text = chordName;
-          text.pos.y = -1;
+          //text.pos.y = -1;
           text.color = "#0000FF";
           cursor.add(text);
         }
