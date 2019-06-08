@@ -2,24 +2,31 @@
 
 This is a set of practical plugins to assist with identifying intervals and chords, as well as finding errors in two-part counterpoint and four-part SATB writing. It can also generate interval, triad, and seventh chord exercise pages, and can automatically grade interval worksheets completed in MuseScore.
 
+## MuseScore2 vs MuseScore3
+
+The checker plugins have been updated to work with the latest release of MuseScore3.
+
+Unfortunately, the plugin framework is not yet fully implemented in MuseScore3, so the exercise makers do not work. You will need to use MuseScore2 to create interval, triad, or seventh chord worksheets with these plugins.
+
 ## Installation
 
 Copy the included .qml files to your Documents/MuseScore2/Plugins folder. Then open MuseScore and open the Plugin Manager (in the Plugins menu). Check the boxes next to the following entries and click OK:
 * chord_checker
+* interval_checker
 * interval_exercise_checker
 * pop_chord_checker
+* satb_checker_major
+* satb_checker_minor
+* species_checker
 * seventh_chord_exercise_maker
 * triad_exercise_maker
-* interval_checker
 * interval_exercise_maker
-* satb_checker
-* species_checker
 
 Now when you go to the Plugins menu the counterpoint, SATB, and interval, chord, and pop chord checkers will appear under the heading “Proof Reading.” The exercise makers and checkers appear in a separate top menu called "Exercises."
 
 ## Use
 
-### Counterpoint Checker
+### Species Counterpoint Checker
 
 Enter your counterpoint melody on a grand staff and run the plugin from the Plugins menu to check your results. If you have selected one or more measures, the plugin will only check the selected measures. If no measures are selected, it will run on the entire file.
 
@@ -74,7 +81,7 @@ Melody should have larger range (experimental warning – uses standard deviatio
 
 ### SATB Chorale Checker
 
-By default the plugin will run in Major mode. To check minor examples, set the “Lyricist” text field (Add → Text → Lyricist) to “Minor”. If you have selected one or more measures, the plugin will only check the selected measures. If no measures are selected, it will run on the entire file.
+This plugin checks four-part SATB writing. You will need to choose major or minor mode from the plugin menu. If you have selected one or more measures, the plugin will only check the selected measures. If no measures are selected, it will run on the entire file.
 
 Roman numerals and figured bass should be entered as lyrics. Feel free to use superscript/subscript for figured bass, and to resize the lyrics as desired.
 
@@ -116,7 +123,7 @@ My only restriction about doubling is never double the leading tone. This plugin
 
 #### Leading Tone Resolution
 
-Many theory texts require that if the leading tone is in the soprano on V-I or viio-I it must resolve upward to 1/do. In my theory classes I'm more hardcore: I say that the leading tone must resolve up to 1/do no matter what voice it’s in. If you want to change it, you can open the plugin code in the Plugin Creator and change line 15 from true to false.
+By default, this plugin indicates an error in any voice if the leading tone doesn't resolve upward on V-I or viio-I. I'm aware that this is a very strict interpretation of the rule, and that many composers (including Bach) chose to forego leading tone resolution in an inner voice in order to cadence without irregular doubling. This is just my own preference--I feel there is pedagogical value in encouraging LT resolutions in all voices. If you want to change it to only give a warning for soprano voice LT resolution, you can open the plugin code in the Plugin Creator and change line 15 from true to false.
 
 ## Clearing annotations
 
@@ -124,7 +131,7 @@ Usually the score annotations added by any of the plugins can be removed with th
 
 ## Errors
 
-The species counterpoint plugin may malfunction if there are rests other than an initial rest in 2-4 species. The counterpoint plugin also malfunctions if there is a bass note without a melody note present. I’m working on finding a way around these problems, which are mainly a problem with the MuseScore2 plugin framework.
+The species counterpoint plugin may malfunction if there are rests other than an initial rest in 2-4 species. The counterpoint plugin also malfunctions if there is a bass note without a melody note present. I’m working on finding a way around these problems, which are mainly a problem with the MuseScore plugin framework.
 
 Please report any errors, questions, or suggestions to joel@matthysmusic.com
 

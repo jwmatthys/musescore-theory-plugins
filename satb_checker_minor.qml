@@ -3,12 +3,12 @@ import QtQuick.Dialogs 1.1
 import MuseScore 3.0
 
 MuseScore {
-  menuPath: "Plugins.Proof Reading.SATB Checker"
+  menuPath: "Plugins.Proof Reading.SATB Checker.Minor"
   description: "This plugin will check for part-writing errors in tonal SATB chorales"
   version: "0.21"
 
   property
-  var mode: "Major";
+  var mode: "Minor";
   property
   var key: 14;
   property
