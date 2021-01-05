@@ -2,22 +2,18 @@
 
 This is a set of practical plugins to assist with identifying intervals and chords, as well as finding errors in two-part counterpoint and four-part SATB writing. It can also generate interval, triad, and seventh chord exercise pages, and can automatically grade interval worksheets completed in MuseScore.
 
-## MuseScore2 vs MuseScore3
+## Latest MuseScore3 Requirement
 
-The checker plugins have been updated to work with the latest release of MuseScore3.
-
-Unfortunately, the plugin framework is not yet fully implemented in MuseScore3, so the exercise makers do not work. You will need to use MuseScore2 to create interval, triad, or seventh chord worksheets with these plugins.
+The checker plugins have been updated to work with the latest release of MuseScore3. The SATB Checker requires MuseScore 3.5.2 in order to correctly read the roman numeral analysis.
 
 ## Installation
 
-Copy the included .qml files to your Documents/MuseScore2/Plugins folder. Then open MuseScore and open the Plugin Manager (in the Plugins menu). Check the boxes next to the following entries and click OK:
+Copy the included .qml files to your Documents/MuseScore3/Plugins folder. Then open MuseScore and open the Plugin Manager (in the Plugins menu). Check the boxes next to the following entries and click OK:
 * chord_checker
 * interval_checker
 * interval_exercise_checker
 * pop_chord_checker
-* satb_checker_major
-* satb_checker_minor
-* species_checker
+* satb_checker
 * seventh_chord_exercise_maker
 * triad_exercise_maker
 * interval_exercise_maker
@@ -26,7 +22,22 @@ Now when you go to the Plugins menu the counterpoint, SATB, and interval, chord,
 
 ## Use
 
+### SATB Part-Writing Checker
+
+I've wanted to use MuseScore3's new Roman Numeral Analysis tool with part-writing for a long time! This newly updated plugin checks four-part SATB writing, comparing it against the roman numerals to determine if the pitches are correct. It will check voice leading, range, spacing, forbidden parallels, missing chord tones, and more! I created it to find as many possible inaccuracies and style weaknesses as possible.
+
+Roman numerals should be added with the Roman Numeral Analysis tool (Add -> Text -> Roman Numeral Analysis).
+
+Every chord must have four voices spread across two staves, but they can be arranged in any way you want. The plugin will read them from the bottom-up.
+
+You can use diatonic roman numerals with figured bass for inversions. You can also use borrowed chords (mode mixture), secondary chords (V7/V, for instance, or even ii7/iii!), Neapolitan, Italian/German/French augmented sixth chords, and Cadential 6/4 chords. Check the example_satb_complex sample file for details.
+
+There are no options or settings to tweak on this version. The plugin guesses major or minor mode through a simple trick: if there are more i, iv, III, and VI
+chords than I, IV, iii, and vi chords, it infers that it is minor mode.
+
 ### Species Counterpoint Checker
+
+## I WILL BE UPDATING THIS SOON! STAND BY
 
 Enter your counterpoint melody on a grand staff and run the plugin from the Plugins menu to check your results. If you have selected one or more measures, the plugin will only check the selected measures. If no measures are selected, it will run on the entire file.
 
@@ -79,51 +90,6 @@ Too many leaps (up to 50% before warning)
 Melody should have larger range (experimental warning – uses standard deviation of melody)
 ```
 
-### SATB Chorale Checker
-
-This plugin checks four-part SATB writing. You will need to choose major or minor mode from the plugin menu. If you have selected one or more measures, the plugin will only check the selected measures. If no measures are selected, it will run on the entire file.
-
-Roman numerals and figured bass should be entered as lyrics. Feel free to use superscript/subscript for figured bass, and to resize the lyrics as desired.
-
-There are multiple valid ways to enter the SATB voices:
-* Soprano in layer 1, alto in layer 2 of top staff; tenor in layer 1, bass in layer 2 of bass staff
-* Soprano and alto as chords in layer 1 of top staff; tenor and bass as layer 1 of bottom staff
-* Soprano, alto, and tenor as layer 1 in top staff; bass as layer 1 of bottom staff (keyboard style)
-
-The plugin will do its best to guess where the voices are placed.
-
-#### SATB Proofreading Codes
-
-```
-Code          Meaning
-note err      One or more wrong notes in the chord
-inv           Incorrect inversion based on figured bass
-no root       Missing the root of the chord
-no 3rd        Missing the third of the chord
-no 7th        Seventh chord is missing the seventh
-no 5th        Chord is in inversion and is missing the fifth.
-X             Voice crossing error
-sp            Spacing error (more than an octave between soprano-alto or alto-tenor)
-raise LT      Leading tone needs to be raised
-LT doubled    Leading tone is doubled
-||P5          Parallel 5ths (hidden 5ths will also be identified as ||P5)
-||P8          Parallel octaves
-LT res        Leading tone needs to resolve up to tonic*
-tendency      A tendency tone needs to resolve down (usually the 7th of a V7 chord)
-d7 res        Seventh of viio7 needs to resolve down
-s range       Soprano note is out of standard range (C4 - G5)
-a range       Alto note is out of standard range (G3 - D5)
-t range       Tenor note is out of standard range (C3 - G4)
-b range       Bass note is out of standard range (E2 - C4)
-```
-
-#### Doubling Rules
-
-My only restriction about doubling is never double the leading tone. This plugin will not warn about irregular doubling unless you leave out an essential chord tone or have forbidden parallels.
-
-#### Leading Tone Resolution
-
-By default, this plugin indicates an error in any voice if the leading tone doesn't resolve upward on V-I or viio-I. I'm aware that this is a very strict interpretation of the rule, and that many composers (including Bach) chose to forego leading tone resolution in an inner voice in order to cadence without irregular doubling. This is just my own preference--I feel there is pedagogical value in encouraging LT resolutions in all voices. If you want to change it to only give a warning for soprano voice LT resolution, you can open the plugin code in the Plugin Creator and change line 15 from true to false.
 
 ## Clearing annotations
 
