@@ -25,6 +25,7 @@ MuseScore {
     [60, 79] // soprano
   ];
 
+  property bool majorMode: true;
   property bool noErrorsFound: true; // yet... :)
   property bool processAll: false;
   property bool harmonyFound: true;
@@ -128,6 +129,10 @@ MuseScore {
         var harmony = getRomanNumeral(segment, measure);
         if (harmony) {
           var rawRomanNumeral = harmony.text;
+          if ("Cad64" === rawRomanNumeral || "cad64" === rawRomanNumeral) {
+            if (majorMode) rawRomanNumeral = "I64";
+            else rawRomanNumeral = "i64";
+          }
           var figBass = getFiguredBass(rawRomanNumeral);
           var leftRomanNumeralClean = getRoman(rawRomanNumeral);
           var tonicTPC = getTonicTPC(rawRomanNumeral);
@@ -315,8 +320,14 @@ MuseScore {
           if (correctPitches.indexOf(testPitch) < 0) {
             var correctPitch = correctPitches[v];
             chords[i].voices[v].color = colorError;
-            var msg = "Wrong note in " + voiceNames[v] + ".\nIt should be " + tpcName(correctPitch);
-            markText(chords[i], msg);
+            if (("V" === chords[i].roman || "viio" === chords[i].roman || "vii0" === chords[i].roman) &&
+              (chords[i].tpc[v] === chords[i].key - 2)) {
+              var msg = "You need to raise\nthe leading tone in\nthe "+voiceNames[v]+".";
+              markText(chords[i], msg);
+            } else {
+              var msg = "Wrong note in " + voiceNames[v] + ".";
+              markText(chords[i], msg);
+            }
           }
         }
       }
@@ -361,23 +372,23 @@ MuseScore {
         var root = chords[i].romanPitches[0];
         var third = chords[i].romanPitches[1];
         if (chords[i].tpc.indexOf(root) < 0) {
-          markText(chords[i], "Missing root.");
+          markText(chords[i], "No root.");
         }
         if (chords[i].tpc.indexOf(third) < 0) {
-          markText(chords[i], "Missing 3rd.");
+          markText(chords[i], "No 3rd.");
         }
         if (chords[i].romanPitches.length > 3) {
           // check for seventh
           var seventh = chords[i].romanPitches[3];
           if (chords[i].tpc.indexOf(seventh) < 0) {
-            markText(chords[i], "Missing 7th.");
+            markText(chords[i], "No 7th.");
           }
         }
         if (chords[i].romanPitches.length > 4) {
           // check for ninth
           var ninth = chords[i].romanPitches[4];
           if (chords[i].tpc.indexOf(ninth) < 0) {
-            markText(chords[i], "Missing 9th.");
+            markText(chords[i], "No 9th.");
           }
         }
         if ("It" === chords[i].roman ||
@@ -526,7 +537,7 @@ MuseScore {
               // If LT doesn't resolve up in other voices it's just info
               chords[i].voices[v].color = colorInfo;
               chords[i + 1].voices[v].color = colorInfo;
-              var msg = "FYI: Leading tone in " + voiceNames[v] + "\nisn't resolving up to tonic\n(free resolution)";
+              var msg = "FYI: Leading tone in " + voiceNames[v] + "\nusually resolves up to tonic.";
               markText(chords[i + 1], msg);
             }
           }
@@ -539,7 +550,7 @@ MuseScore {
   // unless it's an aug6 chord, in which case it must resolve up by semitone or stay the same (rare)
   function checkFor7thResolution(chords) {
     for (var i = 0; i < chords.length - 1; i++) {
-      if (chords[i].tpc && chords[i + 1].tpc) {
+      if (chords[i].romanPitches && chords[i + 1].romanPitches) {
         if (chords[i].tpc.length > 3) { // seventh (or 9th) chord found
           for (var v = 0; v < 4; v++) {
             if (chords[i].tpc[v] === chords[i].romanPitches[3]) { //which voice has seventh?
@@ -556,10 +567,10 @@ MuseScore {
                   var melodicDist = chords[i + 1].pitches[v] - chords[i].pitches[v];
                   if ((chords[i + 1].pitches[v] - chords[i].pitches[v] > 0) ||
                     (chords[i + 1].pitches[v] - chords[i].pitches[v] < -2)) {
-                    chords[i].voices[v].color = colorError;
-                    chords[i + 1].voices[v].color = colorError;
-                    var msg = "Chordal 7th of dominant\nmust resolve down by step.";
-                    markText(chords[i], msg);
+                    chords[i].voices[v].color = colorInfo;
+                    chords[i + 1].voices[v].color = colorInfo;
+                    var msg = "FYI: Chordal 7th of\ndominant usually resolves\ndown by step.";
+                    markText(chords[i + 1], msg);
                   }
                 }
               }
@@ -579,7 +590,13 @@ MuseScore {
         var rawRomanNumeral = harmony.text;
         var leftRomanNumeralClean = getRoman(rawRomanNumeral);
         if ("I" === leftRomanNumeralClean) majorCount++;
-        else if ("i" === leftRomanNumeralClean) majorCount--;
+        if ("IV" === leftRomanNumeralClean) majorCount++;
+        if ("iii" === leftRomanNumeralClean) majorCount++;
+        if ("vi" === leftRomanNumeralClean) majorCount++;
+        if ("i" === leftRomanNumeralClean) majorCount--;
+        if ("iv" === leftRomanNumeralClean) majorCount--;
+        if ("III" === leftRomanNumeralClean) majorCount--;
+        if ("VI" === leftRomanNumeralClean) majorCount--;
       }
       segment = segment.next;
     }
@@ -588,6 +605,7 @@ MuseScore {
       return 14; // major key
     } else {
       console.log("Hmm... this looks to me like it's a MINOR key.");
+      majorMode = false;
       return 17; // minor key
     }
     return 0;
