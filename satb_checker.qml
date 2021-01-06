@@ -354,7 +354,10 @@ MuseScore {
       if (chords[i].tpc && chords[i].roman) {
         var inversion = chords[i].inversion;
         var correctBassNote = chords[i].romanPitches[inversion];
-        if (chords[i].tpc[0] != correctBassNote) {
+        var correctPitches = chords[i].romanPitches;
+        var testPitch = chords[i].tpc[0];
+        var bassNoteIsInChord = !(correctPitches.indexOf(testPitch) < 0);
+        if (bassNoteIsInChord && testPitch != correctBassNote) {
           chords[i].voices[0].color = colorInversionError;
           var msg = "Inversion: bass\nshould be " + tpcName(correctBassNote) + ".";
           markText(chords[i], msg, colorInversionError);
