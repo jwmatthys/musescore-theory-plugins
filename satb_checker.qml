@@ -7,16 +7,26 @@ MuseScore {
   description: "Check 4-part writing for errors.\nIf roman numerals are present, will check for correct pitches.\nRoman numerals may also include applied (secondary) chords, Neapolitan, and augmented sixth chords.";
   version: "0.31"
 
-  property var colorOrchestrationError: "#AF6E4D"; // Range / Crossing / Spacing - brown
-  property var colorPitchError: "#CE2029"; // Wrong pitch & Inversion error
-  property var colorInversionError: "#FEDF00";
-  property var colorDoubledLTError: "#600887";
-  property var colorMissingTones: "#009F6B";
-  property var colorParallelPerfect: "#FF4F00";
-  property var colorHiddenPerfect: "#C74375";
-  property var colorVoiceLeadingWarning: "#DA9100";
-  property var colorTendencyToneError: "#0047AB";
-  property var colorTendencyToneWarning: "#8CC5CE";
+  property
+  var colorOrchestrationError: "#AF6E4D"; // Range / Crossing / Spacing - brown
+  property
+  var colorPitchError: "#CE2029"; // Wrong pitch & Inversion error
+  property
+  var colorInversionError: "#FEDF00";
+  property
+  var colorDoubledLTError: "#600887";
+  property
+  var colorMissingTones: "#009F6B";
+  property
+  var colorParallelPerfect: "#FF4F00";
+  property
+  var colorHiddenPerfect: "#C74375";
+  property
+  var colorVoiceLeadingWarning: "#DA9100";
+  property
+  var colorTendencyToneError: "#0047AB";
+  property
+  var colorTendencyToneWarning: "#8CC5CE";
 
   property
   var voiceRanges: [
@@ -91,12 +101,13 @@ MuseScore {
 
   function getPitches(segment, measure) {
     // step 1: read pitches
-    if (segment.elementAt(4).type == Element.CHORD ||
-      segment.elementAt(4).type == Element.REST) {
+    if (segment && segment.elementAt(4) &&
+      (segment.elementAt(4).type == Element.CHORD ||
+        segment.elementAt(4).type == Element.REST)) {
 
       var voices = assignVoices(segment, measure);
       if (!segment.elementAt(0).notes) {
-        msgWarning.text = "Empty treble staff.";
+        msgWarning.text = "Empty treble staff in measure " + measure + ".";
         msgWarning.visible = true;
       }
       return voices;
@@ -268,13 +279,15 @@ MuseScore {
 
   function checkVoiceRanges(chords) {
     for (var i = 0; i < chords.length; i++) {
-      for (var v = 0; v < 4; v++) {
-        if (chords[i].pitches) {
-          if (!isBetween(chords[i].pitches[v], voiceRanges[v][0], voiceRanges[v][1])) {
-            // voice is out of range - color note and add error message
-            chords[i].voices[v].color = colorOrchestrationError;
-            var msg = "Out of range (" + voiceNames[v] + ").";
-            markText(chords[i], msg, colorOrchestrationError);
+      if (chords[i].pitches) {
+        for (var v = 0; v < chords[i].pitches.length; v++) {
+          if (chords[i].pitches) {
+            if (!isBetween(chords[i].pitches[v], voiceRanges[v][0], voiceRanges[v][1])) {
+              // voice is out of range - color note and add error message
+              chords[i].voices[v].color = colorOrchestrationError;
+              var msg = "Out of range (" + voiceNames[v] + ").";
+              markText(chords[i], msg, colorOrchestrationError);
+            }
           }
         }
       }
@@ -317,14 +330,14 @@ MuseScore {
     for (var i = 0; i < chords.length; i++) {
       if (chords[i].romanPitches) {
         var correctPitches = chords[i].romanPitches;
-        for (var v = 0; v < 4; v++) {
+        for (var v = 0; v < chords[i].romanPitches.length; v++) {
           var testPitch = chords[i].tpc[v];
           if (correctPitches.indexOf(testPitch) < 0) {
             var correctPitch = correctPitches[v];
             chords[i].voices[v].color = colorPitchError;
             if (("V" === chords[i].roman || "viio" === chords[i].roman || "vii0" === chords[i].roman) &&
               (chords[i].tpc[v] === chords[i].key - 2)) {
-              var msg = "You need to raise\nthe leading tone in\nthe "+voiceNames[v]+".";
+              var msg = "You need to raise\nthe leading tone in\nthe " + voiceNames[v] + ".";
               markText(chords[i], msg, colorPitchError);
             } else {
               var msg = "Wrong note in " + voiceNames[v] + ".";
@@ -354,7 +367,7 @@ MuseScore {
     for (var i = 0; i < chords.length; i++) {
       var leadingTones = [];
       if (chords[i].tpc && chords[i].roman) {
-        for (var v = 0; v < 4; v++) {
+        for (var v = 0; v < chords[i].tpc.length; v++) {
           if (chords[i].tpc[v] == chords[i].key + 5) leadingTones.push(chords[i].voices[v]);
         }
       }
