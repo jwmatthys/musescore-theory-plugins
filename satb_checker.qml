@@ -356,7 +356,7 @@ MuseScore {
         var correctBassNote = chords[i].romanPitches[inversion];
         if (chords[i].tpc[0] != correctBassNote) {
           chords[i].voices[0].color = colorInversionError;
-          var msg = "Inversion error:\nbass note should be " + tpcName(correctBassNote) + ".";
+          var msg = "Inversion: bass\nshould be " + tpcName(correctBassNote) + ".";
           markText(chords[i], msg, colorInversionError);
         }
       }
@@ -387,23 +387,23 @@ MuseScore {
         var root = chords[i].romanPitches[0];
         var third = chords[i].romanPitches[1];
         if (chords[i].tpc.indexOf(root) < 0) {
-          markText(chords[i], "No root.", colorMissingTones);
+          markText(chords[i], "Missing root.", colorMissingTones);
         }
         if (chords[i].tpc.indexOf(third) < 0) {
-          markText(chords[i], "No 3rd.", colorMissingTones);
+          markText(chords[i], "Missing 3rd.", colorMissingTones);
         }
         if (chords[i].romanPitches.length > 3) {
           // check for seventh
           var seventh = chords[i].romanPitches[3];
           if (chords[i].tpc.indexOf(seventh) < 0) {
-            markText(chords[i], "No 7th.", colorMissingTones);
+            markText(chords[i], "Missing 7th.", colorMissingTones);
           }
         }
         if (chords[i].romanPitches.length > 4) {
           // check for ninth
           var ninth = chords[i].romanPitches[4];
           if (chords[i].tpc.indexOf(ninth) < 0) {
-            markText(chords[i], "No 9th.", colorMissingTones);
+            markText(chords[i], "Missing 9th.", colorMissingTones);
           }
         }
         if ("It" === chords[i].roman ||
@@ -585,7 +585,7 @@ MuseScore {
                     (chords[i + 1].pitches[v] - chords[i].pitches[v] < -2)) {
                     chords[i].voices[v].color = colorTendencyToneWarning;
                     chords[i + 1].voices[v].color = colorTendencyToneWarning;
-                    var msg = "FYI: Chordal 7th of\ndominant usually resolves\ndown by step.";
+                    var msg = "FYI: The 7th of the\ndominant chord usually\nresolves down by step.";
                     markText(chords[i + 1], msg, colorTendencyToneWarning);
                   }
                 }
@@ -665,18 +665,19 @@ MuseScore {
     key = cursor.keySignature + majorOrMinor(segment, processAll, endTick);
     var chords = getChords(segment, processAll, endTick);
 
-    checkForLTResolution(chords);
-    checkFor7thResolution(chords);
-    checkForSopranoLTP(chords);
-    checkForParallels(chords);
-
-    checkForMissingTones(chords);
-    checkForDoubledLT(chords);
-    checkForWrongInversion(chords);
-    checkForWrongPitches(chords);
     checkVoiceSpacing(chords);
     checkVoiceCrossing(chords);
     checkVoiceRanges(chords);
+
+    checkForParallels(chords);
+    checkForMissingTones(chords);
+    checkForDoubledLT(chords);
+    checkForWrongPitches(chords);
+    checkForWrongInversion(chords);
+
+    checkForLTResolution(chords);
+    checkFor7thResolution(chords);
+    checkForSopranoLTP(chords);
 
     if (noErrorsFound) {
       msgWarning.text = "Great job! No errors found.";
