@@ -579,7 +579,7 @@ MuseScore {
                   markText(chords[i], msg, colorTendencyToneError);
                 }
               } else {
-                if ("dominant" === chords[i].quality || "diminished" === chords[i].quality) {
+                if ("V" === chords[i].roman || "viio" === chords[i].roman || "vii0" === chords[i].roman) {
                   var melodicDist = chords[i + 1].pitches[v] - chords[i].pitches[v];
                   if ((chords[i + 1].pitches[v] - chords[i].pitches[v] > 0) ||
                     (chords[i + 1].pitches[v] - chords[i].pitches[v] < -2)) {
