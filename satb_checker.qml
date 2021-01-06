@@ -5,17 +5,18 @@ import MuseScore 3.0
 MuseScore {
   menuPath: "Plugins.Proof Reading.SATB Checker"
   description: "Check 4-part writing for errors.\nIf roman numerals are present, will check for correct pitches.\nRoman numerals may also include applied (secondary) chords, Neapolitan, and augmented sixth chords.";
-  version: "0.3"
+  version: "0.31"
 
-  // colors taken from this palette: https://coolors.co/003049-d62828-f77f00-fcbf49-eae2b7
-  property
-  var colorError: "#d62828";
-  property
-  var colorWarning: "#f77f00";
-  property
-  var colorInfo: "#fcbf49";
-  property
-  var colorText: "003049";
+  property var colorOrchestrationError: "#AF6E4D"; // Range / Crossing / Spacing - brown
+  property var colorPitchError: "#CE2029"; // Wrong pitch & Inversion error
+  property var colorInversionError: "#FEDF00";
+  property var colorDoubledLTError: "#600887";
+  property var colorMissingTones: "#009F6B";
+  property var colorParallelPerfect: "#FF4F00";
+  property var colorHiddenPerfect: "#C74375";
+  property var colorVoiceLeadingWarning: "#DA9100";
+  property var colorTendencyToneError: "#0047AB";
+  property var colorTendencyToneWarning: "#8CC5CE";
 
   property
   var voiceRanges: [
@@ -45,9 +46,10 @@ MuseScore {
     visible: false;
   }
 
-  function markText(chord, msg) {
+  function markText(chord, msg, color) {
     var myText = newElement(Element.STAFF_TEXT);
     myText.text = msg;
+    myText.color = color;
     noErrorsFound = false;
     var cursor = curScore.newCursor();
     cursor.rewindToTick(chord.tick);
@@ -270,9 +272,9 @@ MuseScore {
         if (chords[i].pitches) {
           if (!isBetween(chords[i].pitches[v], voiceRanges[v][0], voiceRanges[v][1])) {
             // voice is out of range - color note and add error message
-            chords[i].voices[v].color = colorError;
+            chords[i].voices[v].color = colorOrchestrationError;
             var msg = "Out of range (" + voiceNames[v] + ").";
-            markText(chords[i], msg);
+            markText(chords[i], msg, colorOrchestrationError);
           }
         }
       }
@@ -285,10 +287,10 @@ MuseScore {
       for (var v = 0; v < 3; v++) {
         if (chords[i].pitches) {
           if (chords[i].pitches[v] > chords[i].pitches[v + 1]) {
-            chords[i].voices[v].color = colorError;
-            chords[i].voices[v + 1].color = colorError;
+            chords[i].voices[v].color = colorOrchestrationError;
+            chords[i].voices[v + 1].color = colorOrchestrationError;
             var msg = voiceLabels[v - 1] + " voices cross.";
-            markText(chords[i], msg);
+            markText(chords[i], msg, colorOrchestrationError);
           }
         }
       }
@@ -301,10 +303,10 @@ MuseScore {
       for (var v = 1; v < 3; v++) {
         if (chords[i].pitches) {
           if (chords[i].pitches[v + 1] - chords[i].pitches[v] > 12) {
-            chords[i].voices[v].color = colorError;
-            chords[i].voices[v + 1].color = colorError;
+            chords[i].voices[v].color = colorOrchestrationError;
+            chords[i].voices[v + 1].color = colorOrchestrationError;
             var msg = voiceLabels[v - 1] + " spacing.";
-            markText(chords[i], msg);
+            markText(chords[i], msg, colorOrchestrationError);
           }
         }
       }
@@ -319,14 +321,14 @@ MuseScore {
           var testPitch = chords[i].tpc[v];
           if (correctPitches.indexOf(testPitch) < 0) {
             var correctPitch = correctPitches[v];
-            chords[i].voices[v].color = colorError;
+            chords[i].voices[v].color = colorPitchError;
             if (("V" === chords[i].roman || "viio" === chords[i].roman || "vii0" === chords[i].roman) &&
               (chords[i].tpc[v] === chords[i].key - 2)) {
               var msg = "You need to raise\nthe leading tone in\nthe "+voiceNames[v]+".";
-              markText(chords[i], msg);
+              markText(chords[i], msg, colorPitchError);
             } else {
               var msg = "Wrong note in " + voiceNames[v] + ".";
-              markText(chords[i], msg);
+              markText(chords[i], msg, colorPitchError);
             }
           }
         }
@@ -340,9 +342,9 @@ MuseScore {
         var inversion = chords[i].inversion;
         var correctBassNote = chords[i].romanPitches[inversion];
         if (chords[i].tpc[0] != correctBassNote) {
-          chords[i].voices[0].color = colorError;
+          chords[i].voices[0].color = colorInversionError;
           var msg = "Inversion error:\nbass note should be " + tpcName(correctBassNote) + ".";
-          markText(chords[i], msg);
+          markText(chords[i], msg, colorInversionError);
         }
       }
     }
@@ -358,10 +360,10 @@ MuseScore {
       }
       if (leadingTones.length > 1) {
         for (var z = 0; z < leadingTones.length; z++) {
-          leadingTones[z].color = colorError;
+          leadingTones[z].color = colorDoubledLTError;
         }
         var msg = "Doubled LT of key.";
-        markText(chords[i], msg);
+        markText(chords[i], msg, colorDoubledLTError);
       }
     }
   }
@@ -372,23 +374,23 @@ MuseScore {
         var root = chords[i].romanPitches[0];
         var third = chords[i].romanPitches[1];
         if (chords[i].tpc.indexOf(root) < 0) {
-          markText(chords[i], "No root.");
+          markText(chords[i], "No root.", colorMissingTones);
         }
         if (chords[i].tpc.indexOf(third) < 0) {
-          markText(chords[i], "No 3rd.");
+          markText(chords[i], "No 3rd.", colorMissingTones);
         }
         if (chords[i].romanPitches.length > 3) {
           // check for seventh
           var seventh = chords[i].romanPitches[3];
           if (chords[i].tpc.indexOf(seventh) < 0) {
-            markText(chords[i], "No 7th.");
+            markText(chords[i], "No 7th.", colorMissingTones);
           }
         }
         if (chords[i].romanPitches.length > 4) {
           // check for ninth
           var ninth = chords[i].romanPitches[4];
           if (chords[i].tpc.indexOf(ninth) < 0) {
-            markText(chords[i], "No 9th.");
+            markText(chords[i], "No 9th.", colorMissingTones);
           }
         }
         if ("It" === chords[i].roman ||
@@ -397,7 +399,8 @@ MuseScore {
           // check for remaining tone
           var aug6Tone = chords[i].romanPitches[2];
           if (chords[i].tpc.indexOf(aug6Tone) < 0) {
-            markText(chords[i], "Missing " + tpcName(aug6Tone) + " from\n" + chords[i].roman + "6 chord.");
+            var msg = "Missing " + tpcName(aug6Tone) + " from\n" + chords[i].roman + "6 chord."
+            markText(chords[i], msg, colorMissingTones);
           }
         }
       }
@@ -440,20 +443,20 @@ MuseScore {
               if (chords[i + 1].tpc[lowerVoice] == chords[i + 1].tpc[upperVoice]) {
                 if ("similar" == direction) {
                   // PARALLEL OCTAVES! OH NO!
-                  chords[i].voices[lowerVoice].color = colorError;
-                  chords[i].voices[upperVoice].color = colorError;
-                  chords[i + 1].voices[lowerVoice].color = colorError;
-                  chords[i + 1].voices[upperVoice].color = colorError;
+                  chords[i].voices[lowerVoice].color = colorParallelPerfect;
+                  chords[i].voices[upperVoice].color = colorParallelPerfect;
+                  chords[i + 1].voices[lowerVoice].color = colorParallelPerfect;
+                  chords[i + 1].voices[upperVoice].color = colorParallelPerfect;
                   var msg = "Parallel P8\n(" + voiceNames[lowerVoice] + "-" + voiceNames[upperVoice] + ").";
-                  markText(chords[i], msg);
+                  markText(chords[i], msg, colorParallelPerfect);
                 } else if ("contrary" == direction) {
                   // HIDDEN (contrary) OCTAVES!
-                  chords[i].voices[lowerVoice].color = colorWarning;
-                  chords[i].voices[upperVoice].color = colorWarning;
-                  chords[i + 1].voices[lowerVoice].color = colorWarning;
-                  chords[i + 1].voices[upperVoice].color = colorWarning;
+                  chords[i].voices[lowerVoice].color = colorHiddenPerfect;
+                  chords[i].voices[upperVoice].color = colorHiddenPerfect;
+                  chords[i + 1].voices[lowerVoice].color = colorHiddenPerfect;
+                  chords[i + 1].voices[upperVoice].color = colorHiddenPerfect;
                   var msg = "Hidden P8\n(" + voiceNames[lowerVoice] + "-" + voiceNames[upperVoice] + ").";
-                  markText(chords[i], msg);
+                  markText(chords[i], msg, colorHiddenPerfect);
                 }
               }
             }
@@ -464,20 +467,20 @@ MuseScore {
                 // successive fifth found
                 if ("similar" == direction) {
                   // PARALLEL OCTAVES! OH NO!
-                  chords[i].voices[lowerVoice].color = colorError;
-                  chords[i].voices[upperVoice].color = colorError;
-                  chords[i + 1].voices[lowerVoice].color = colorError;
-                  chords[i + 1].voices[upperVoice].color = colorError;
+                  chords[i].voices[lowerVoice].color = colorParallelPerfect;
+                  chords[i].voices[upperVoice].color = colorParallelPerfect;
+                  chords[i + 1].voices[lowerVoice].color = colorParallelPerfect;
+                  chords[i + 1].voices[upperVoice].color = colorParallelPerfect;
                   var msg = "Parallel P5\n(" + voiceNames[lowerVoice] + "-" + voiceNames[upperVoice] + ").";
-                  markText(chords[i], msg);
+                  markText(chords[i], msg, colorParallelPerfect);
                 } else if ("contrary" == direction) {
                   // HIDDEN (contrary) OCTAVES!
-                  chords[i].voices[lowerVoice].color = colorWarning;
-                  chords[i].voices[upperVoice].color = colorWarning;
-                  chords[i + 1].voices[lowerVoice].color = colorWarning;
-                  chords[i + 1].voices[upperVoice].color = colorWarning;
+                  chords[i].voices[lowerVoice].color = colorHiddenPerfect;
+                  chords[i].voices[upperVoice].color = colorHiddenPerfect;
+                  chords[i + 1].voices[lowerVoice].color = colorHiddenPerfect;
+                  chords[i + 1].voices[upperVoice].color = colorHiddenPerfect;
                   var msg = "Hidden P5\n(" + voiceNames[lowerVoice] + "-" + voiceNames[upperVoice] + ").";
-                  markText(chords[i], msg);
+                  markText(chords[i], msg, colorHiddenPerfect);
                 }
               }
             }
@@ -504,10 +507,10 @@ MuseScore {
           ((chords[i + 1].tpc[soprano] - chords[i + 1].tpc[bass] == 1) || //3
             (chords[i + 1].tpc[soprano] == chords[i + 1].tpc[bass]))
         ) {
-          chords[i].voices[soprano].color = colorWarning;
-          chords[i + 1].voices[soprano].color = colorWarning;
+          chords[i].voices[soprano].color = colorVoiceLeadingWarning;
+          chords[i + 1].voices[soprano].color = colorVoiceLeadingWarning;
           var msg = "Soprano leaps to\nperfect interval\nin similar motion.";
-          markText(chords[i + 1], msg);
+          markText(chords[i + 1], msg, colorVoiceLeadingWarning);
           //console.log("soprano leaped to perfect interval in similar motion");
         }
       }
@@ -527,18 +530,18 @@ MuseScore {
           var v = 3; // check soprano first
           if ((chords[i].tpc[v] == key + 5) && chords[i + 1].tpc[v] != key) {
             // uh oh! LT was in soprano and didn't resolve up to tonic
-            chords[i].voices[3].color = colorError;
-            chords[i + 1].voices[3].color = colorError;
+            chords[i].voices[3].color = colorTendencyToneError;
+            chords[i + 1].voices[3].color = colorTendencyToneError;
             var msg = "Leading tone in soprano\nmust resolve up to\ntonic on V-I or viio-I";
-            markText(chords[i + 1], msg);
+            markText(chords[i + 1], msg, colorTendencyToneError);
           }
           for (v = 0; v < 3; v++) {
             if ((chords[i].tpc[v] == key + 5) && chords[i + 1].tpc[v] != key) {
               // If LT doesn't resolve up in other voices it's just info
-              chords[i].voices[v].color = colorInfo;
-              chords[i + 1].voices[v].color = colorInfo;
+              chords[i].voices[v].color = colorTendencyToneWarning;
+              chords[i + 1].voices[v].color = colorTendencyToneWarning;
               var msg = "FYI: Leading tone in " + voiceNames[v] + "\nusually resolves up to tonic.";
-              markText(chords[i + 1], msg);
+              markText(chords[i + 1], msg, colorTendencyToneWarning);
             }
           }
         }
@@ -557,20 +560,20 @@ MuseScore {
               if ("aug6" === chords[i].quality) {
                 if ((chords[i + 1].pitches[v] - chords[i].pitches[v] > 1) ||
                   (chords[i + 1].pitches[v] - chords[i].pitches[v] < 0)) {
-                  chords[i].voices[v].color = colorError;
-                  chords[i + 1].voices[v].color = colorError;
-                  var msg = "Aug6 (" + tpcName(chords[i].tpc[v]) + ") must resolve\nup by semitone.";
-                  markText(chords[i], msg);
+                  chords[i].voices[v].color = colorTendencyToneError;
+                  chords[i + 1].voices[v].color = colorTendencyToneError;
+                  var msg = "Aug6 (" + tpcName(chords[i].tpc[v]) + ") should resolve\nup by semitone.";
+                  markText(chords[i], msg, colorTendencyToneError);
                 }
               } else {
                 if ("dominant" === chords[i].quality || "diminished" === chords[i].quality) {
                   var melodicDist = chords[i + 1].pitches[v] - chords[i].pitches[v];
                   if ((chords[i + 1].pitches[v] - chords[i].pitches[v] > 0) ||
                     (chords[i + 1].pitches[v] - chords[i].pitches[v] < -2)) {
-                    chords[i].voices[v].color = colorInfo;
-                    chords[i + 1].voices[v].color = colorInfo;
+                    chords[i].voices[v].color = colorTendencyToneWarning;
+                    chords[i + 1].voices[v].color = colorTendencyToneWarning;
                     var msg = "FYI: Chordal 7th of\ndominant usually resolves\ndown by step.";
-                    markText(chords[i + 1], msg);
+                    markText(chords[i + 1], msg, colorTendencyToneWarning);
                   }
                 }
               }
@@ -700,13 +703,13 @@ MuseScore {
     "ii0": [2, -1, -4],
     "iii": [4, 1, 5],
     "bIII": [-3, 1, -2],
-    "III": [4, 8, 5],
+    "III": [-3, 1, -2],
     "iv": [-1, -4, 0],
     "IV": [-1, 3, 0],
     "v": [1, -2, 2],
     "V": [1, 5, 2],
     "bVI": [-4, 0, -3],
-    "VI": [3, 7, 4],
+    "VI": [-4, 0, -3],
     "vi": [3, 0, 4],
     "bVII": [-2, 2, -1],
     "VII": [-2, 2, -1],
