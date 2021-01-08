@@ -849,10 +849,6 @@ MuseScore {
     checkHorizontalIntervals(dyads);
     stepBack(dyads);
 
-    leapToFromDissonance(dyads);
-    consecutiveLeaps(dyads);
-    outlinedTritone(dyads);
-
     consecutiveImperfect(dyads);
 
     ratioOfPerfect(dyads);
@@ -862,6 +858,10 @@ MuseScore {
     checkForDissonantDownbeats(dyads);
     checkApproachToPerfect(dyads);
     downbeatParallels(dyads);
+
+    leapToFromDissonance(dyads);
+    consecutiveLeaps(dyads);
+    outlinedTritone(dyads);
 
     if (noErrorsFound) {
       msgWarning.text = "Great job! No errors found.";

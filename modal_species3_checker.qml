@@ -929,10 +929,6 @@ MuseScore {
     checkHorizontalIntervals(dyads);
     stepBack(dyads);
 
-    leapToFromDissonance(dyads);
-    consecutiveLeaps(dyads);
-    outlinedTritone(dyads);
-
     consecutiveImperfect(dyads);
 
     ratioOfPerfect(dyads);
@@ -942,6 +938,10 @@ MuseScore {
     checkForDissonantDownbeats(dyads);
     checkApproachToPerfect(dyads);
     //downbeatParallels(dyads); // ?? I guess 3rd species doesn't care about downbeat parallels??
+
+    leapToFromDissonance(dyads);
+    consecutiveLeaps(dyads);
+    outlinedTritone(dyads);
 
     if (noErrorsFound) {
       msgWarning.text = "Great job! No errors found.";
