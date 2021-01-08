@@ -123,6 +123,7 @@ MuseScore {
         //dyads[i].notehead[0] = false;
         //dyads[i].notehead[1] = false;
         for (var v = 0; v < 2; v++) {
+          //console.log("126: tick:",dyads[i].tick,"measure:",dyads[i].measure,segment,segment.elementAt(4*v));
           if (segment && segment.elementAt(4 * v)) {
             if (segment.elementAt(4 * v).type == Element.CHORD) {
               dyads[i].voices[v] = segment.elementAt(4 * v).notes[0];
@@ -637,13 +638,16 @@ MuseScore {
       for (var v = 0; v < 2; v++) {
         if (v != cantusFirmus && dyads[i].pitch[v] && dyads[i + 1].pitch[v] && dyads[i + 2].pitch[v] && dyads[i + 3].pitch[v]) {
           var outlinedInterval = dyads[i + 2].tpc[v] - dyads[i].tpc[v];
-          if (6 === outlinedInterval || -6 === outlinedInterval && // outlining tritone
+          var direction0to1 = Math.sign(dyads[i + 1].pitch[v] - dyads[i].pitch[v]);
+          var direction1to2 = Math.sign(dyads[i + 2].pitch[v] - dyads[i + 1].pitch[v]);
+          if ((6 === outlinedInterval || -6 === outlinedInterval) && // outlining tritone
+            direction0to1 === direction1to2 &&
             !isBetween(dyads[i + 2].pitch[v], dyads[i + 1].pitch[v], dyads[i + 3].pitch[v])) { // tritone stands out as change of direction
             dyads[i].voices[v].color = colorConsecutive;
             dyads[i + 1].voices[v].color = colorConsecutive;
             dyads[i + 2].voices[v].color = colorConsecutive;
             var msg = "Avoid outlining\ntritone in three\nnote pattern."
-            markText(dyads[i + 2], msg, colorConsecutive);
+            markText(dyads[i + 1], msg, colorConsecutive);
           }
         }
       }
@@ -794,6 +798,20 @@ MuseScore {
     }
   }
 
+  function checkForVoiceCrossing(dyads) {
+    for (var i = 0; i < dyads.length; i++) {
+      if (dyads[i] && dyads[i].pitch[0] && dyads[i].pitch[1]) {
+        if (dyads[i].pitch[1] > dyads[i].pitch[0]) {
+          if (dyads[i].downbeat) {
+            dyads[i].voices[0].color = colorInfo;
+            dyads[i].voices[1].color = colorInfo;
+          }
+          var msg = "Don't cross\nvoices.";
+          markText(dyads[i], msg, colorInfo);
+        }
+      }
+    }
+  }
 
   //------------------------------------------------------------------------------
 
@@ -837,7 +855,7 @@ MuseScore {
     var dyads = getDyads(segment, processAll, endTick);
 
     //typeOfNCT(dyads);
-
+    checkForVoiceCrossing(dyads);
     perfectFirst(dyads);
     checkApproachFinal(dyads);
 

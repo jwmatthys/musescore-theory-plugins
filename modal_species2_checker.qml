@@ -577,7 +577,7 @@ MuseScore {
             dyads[i - 1].voices[v].color = colorLeaps;
             dyads[i].voices[v].color = colorLeaps;
             dyads[i + 1].voices[v].color = colorLeaps;
-            var msg = "Needs to\nstep down after\nlarge leap up\nin " + voiceNames[v] + " part.";
+            var msg = "Melody should\nstep down after\nlarge leap up\nin " + voiceNames[v] + " part.";
             markText(dyads[i], msg, colorLeaps);
           }
         }
@@ -626,7 +626,10 @@ MuseScore {
       for (var v = 0; v < 2; v++) {
         if (v != cantusFirmus && dyads[i].pitch[v] && dyads[i + 1].pitch[v] && dyads[i + 2].pitch[v] && dyads[i + 3].pitch[v]) {
           var outlinedInterval = dyads[i + 2].tpc[v] - dyads[i].tpc[v];
-          if (6 === outlinedInterval || -6 === outlinedInterval && // outlining tritone
+          var direction0to1 = Math.sign(dyads[i + 1].pitch[v] - dyads[i].pitch[v]);
+          var direction1to2 = Math.sign(dyads[i + 2].pitch[v] - dyads[i+1].pitch[v]);
+          if ((6 === outlinedInterval || -6 === outlinedInterval) && // outlining tritone
+            direction0to1 === direction1to2 &&
             !isBetween(dyads[i + 2].pitch[v], dyads[i + 1].pitch[v], dyads[i + 3].pitch[v])) { // tritone stands out as change of direction
             dyads[i].voices[v].color = colorConsecutive;
             dyads[i + 1].voices[v].color = colorConsecutive;
@@ -703,7 +706,7 @@ MuseScore {
     }
     var ratio = leapCount * 1.0 / noteCount;
     console.log("Percentage of leaps:", ratio * 100, "%");
-    if (ratio > 0.4) {
+    if (ratio > 0.6) {
       var msg = "Too many leaps.";
       markText(dyads[0], msg, colorInfo);
     }
@@ -770,10 +773,10 @@ MuseScore {
             if (prev.pitch[v] == next.pitch[v] && Math.abs(prev.pitch[v] - dyads[i].pitch[v]) <= 2) {
               dyads[i].voices[v].color = colorLeaps;
               var msg = "Neighbor tones\nare not allowed\nin Species II.";
-              console.log("Neighbor tone found in measure", dyads[i].measure + ". This is an error in second species but not in third species.");
+              //console.log("Neighbor tone found in measure", dyads[i].measure + ". This is an error in second species but not in third species.");
               markText(dyads[i - 1], msg, colorLeaps);
             } else if (Math.abs(prev.pitch[v] - next.pitch[v]) <= 4 && Math.abs(prev.pitch[v] - next.pitch[v]) > 2) {
-              console.log("Passing tone found in measure", dyads[i].measure + ". This is not an error in second or third species.");
+              //console.log("Passing tone found in measure", dyads[i].measure + ". This is not an error in second or third species.");
               //markText(dyads[i], "PT", colorLeaps);
             }
           }
@@ -782,6 +785,20 @@ MuseScore {
     }
   }
 
+  function checkForVoiceCrossing(dyads) {
+    for (var i = 0; i < dyads.length; i++) {
+      if (dyads[i] && dyads[i].pitch[0] && dyads[i].pitch[1]) {
+        if (dyads[i].pitch[1] > dyads[i].pitch[0]) {
+          if (dyads[i].downbeat) {
+            dyads[i].voices[0].color = colorInfo;
+            dyads[i].voices[1].color = colorInfo;
+          }
+          var msg = "Don't cross\nvoices.";
+          markText(dyads[i], msg, colorInfo);
+        }
+      }
+    }
+  }
 
   //------------------------------------------------------------------------------
 
@@ -825,6 +842,7 @@ MuseScore {
 
     typeOfNCT(dyads);
 
+    checkForVoiceCrossing(dyads);
     perfectFirst(dyads);
     checkApproachFinal(dyads);
 
@@ -839,7 +857,7 @@ MuseScore {
 
     ratioOfPerfect(dyads);
     ratioOfLeaps(dyads);
-    //melodicRange(dyads);
+    melodicRange(dyads);
 
     checkForDissonantDownbeats(dyads);
     checkApproachToPerfect(dyads);

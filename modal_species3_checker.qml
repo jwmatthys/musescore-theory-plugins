@@ -524,7 +524,8 @@ MuseScore {
     }
     var horizontalInterval = dyads[last].tpc[0] - dyads[penultimate].tpc[0];
     if (dyads[last].pitch[0] > dyads[penultimate].pitch[0] &&
-      horizontalInterval != -5) { // ascending semitone
+      horizontalInterval != -5 && // ascending semitone
+      dyads[penultimate].pitch[1] - dyads[last].pitch[1] != 1) { // unless plagal
       var msg = "Ascending final\nshould be\napproach by semitone.";
       dyads[last].voices[0].color = colorBeginningEnd;
       dyads[last].voices[1].color = colorBeginningEnd;
@@ -583,9 +584,9 @@ MuseScore {
     // 2-3 = step in opposite direction (same as 0-1)
     // warn if 3-4 is not in same direction as 2-3
     // sign = Math.sign(note1- note0); pattern must be sign, !sign, sign; then warn if not sign again
-    if (i + 4 >= dyads.length) return false; // need to check 5th dyad when we get to it
+    if (i + 5 >= dyads.length) return false; // need to check 5th dyad when we get to it
     for (var v = 0; v < 2; v++) {
-      if (v != cantusFirmus && dyads[i].notehead[v] && dyads[i + 1].notehead[v] && dyads[i + 2].notehead[v] && dyads[i + 3].notehead[v]) {
+      if (v != cantusFirmus && dyads[i].notehead[v] && dyads[i + 1].notehead[v] && dyads[i + 2].notehead[v] && dyads[i + 3].notehead[v] && dyads[i + 4].downbeat) {
         var sign0to1 = Math.sign(dyads[i + 1].pitch[v] - dyads[i].pitch[v]);
         var sign1to2 = Math.sign(dyads[i + 2].pitch[v] - dyads[i + 1].pitch[v]);
         var sign2to3 = Math.sign(dyads[i + 3].pitch[v] - dyads[i + 2].pitch[v]);
@@ -706,7 +707,10 @@ MuseScore {
       for (var v = 0; v < 2; v++) {
         if (v != cantusFirmus && dyads[i].pitch[v] && dyads[i + 1].pitch[v] && dyads[i + 2].pitch[v] && dyads[i + 3].pitch[v]) {
           var outlinedInterval = dyads[i + 2].tpc[v] - dyads[i].tpc[v];
-          if (6 === outlinedInterval || -6 === outlinedInterval && // outlining tritone
+          var direction0to1 = Math.sign(dyads[i + 1].pitch[v] - dyads[i].pitch[v]);
+          var direction1to2 = Math.sign(dyads[i + 2].pitch[v] - dyads[i + 1].pitch[v]);
+          if ((6 === outlinedInterval || -6 === outlinedInterval) && // outlining tritone
+            direction0to1 === direction1to2 &&
             !isBetween(dyads[i + 2].pitch[v], dyads[i + 1].pitch[v], dyads[i + 3].pitch[v])) { // tritone stands out as change of direction
             dyads[i].voices[v].color = colorConsecutive;
             dyads[i + 1].voices[v].color = colorConsecutive;
@@ -850,13 +854,28 @@ MuseScore {
             if (prev.pitch[v] == next.pitch[v] && Math.abs(prev.pitch[v] - dyads[i].pitch[v]) <= 2) {
               //dyads[i].voices[v].color = colorLeaps;
               //var msg = "Neighbor tones\nare not allowed\nin Species II.";
-              console.log("Neighbor tone found in measure", dyads[i].measure + ". This is not an error in third species.");
+              //console.log("Neighbor tone found in measure", dyads[i].measure + ". This is not an error in third species.");
               //markText(dyads[i - 1], msg, colorLeaps);
             } else if (Math.abs(prev.pitch[v] - next.pitch[v]) <= 4 && Math.abs(prev.pitch[v] - next.pitch[v]) > 2) {
-              console.log("Passing tone found in measure", dyads[i].measure + ". This is not an error in second or third species.");
+              //console.log("Passing tone found in measure", dyads[i].measure + ". This is not an error in second or third species.");
               //markText(dyads[i], "PT", colorLeaps);
             }
           }
+        }
+      }
+    }
+  }
+
+  function checkForVoiceCrossing(dyads) {
+    for (var i = 0; i < dyads.length; i++) {
+      if (dyads[i] && dyads[i].pitch[0] && dyads[i].pitch[1]) {
+        if (dyads[i].pitch[1] > dyads[i].pitch[0]) {
+          if (dyads[i].downbeat) {
+            dyads[i].voices[0].color = colorInfo;
+            dyads[i].voices[1].color = colorInfo;
+          }
+          var msg = "Don't cross\nvoices.";
+          markText(dyads[i], msg, colorInfo);
         }
       }
     }
@@ -903,7 +922,7 @@ MuseScore {
     var dyads = getDyads(segment, processAll, endTick);
 
     typeOfNCT(dyads);
-
+    checkForVoiceCrossing(dyads);
     perfectFirst(dyads);
     checkApproachFinal(dyads);
 
@@ -918,11 +937,11 @@ MuseScore {
 
     ratioOfPerfect(dyads);
     ratioOfLeaps(dyads);
-    //melodicRange(dyads);
+    melodicRange(dyads);
 
     checkForDissonantDownbeats(dyads);
     checkApproachToPerfect(dyads);
-    downbeatParallels(dyads);
+    //downbeatParallels(dyads); // ?? I guess 3rd species doesn't care about downbeat parallels??
 
     if (noErrorsFound) {
       msgWarning.text = "Great job! No errors found.";
