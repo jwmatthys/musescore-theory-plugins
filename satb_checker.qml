@@ -271,10 +271,8 @@ MuseScore {
 
   function processPitches() {} // maybe we don't need this?
 
-  function isBetween(val, low, hi) {
-    if (val < low) return false;
-    if (val > hi) return false;
-    return true;
+  function isBetween(test, lo, hi) {
+    return (Math.sign(test - lo) === Math.sign(hi - test));
   }
 
   function checkVoiceRanges(chords) {
