@@ -1,0 +1,30 @@
+
+
+Code   Meaning
+acc    Forbidden non-diatonic accidental
+AN     Accented Neighbor tone (not an error)
+APP    Appoggiatura (not an error)
+APT    Accented Passing tone (not an error)
+dir5   Direct fifths – usually either P5→d5 or d5→P5; should be avoided
+dis    Improperly treated dissonance
+DN     Double neighbor (not an error)
+ET     Escape Tone (not an error)
+hid    Hidden fifths or octaves (consecutive P5 or P8 in contrary motion)
+lfd    Leap from dissonant non-chord tone
+ltd    Leap to dissonant non-chord tone
+ltp    Leap to perfect interval in similar motion
+lt     Leading tone not resolved correctly at cadence
+lt!    You forgot to raise the leading tone in minor!
+mel7   Melody leaps a seventh
+NT     Neighbor tone (not an error)
+PT     Passing tone (not an error)
+rep    Forbidden repeated note
+RET    Retardation (not an error) – a suspension that resolves up by half step
+sb     Melody leaps a 6th or octave without stepping back in opposite direction afterward
+SUS    Suspension (not an error)
+X      Melody crosses below bass
+x      Forbidden offbeat notes in first species
+->+3, ->d5    Melody moves by augmented or diminished interval
+2xlt   Leading tone is doubled in bass and melody
+7th    The seventh of a V7 moving to I isn’t resolved correctly
+||P5, ||P8    Parallel fifths or octaves
