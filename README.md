@@ -37,11 +37,11 @@ The modal species plugins will check both the upper and lower parts for counterp
 
 The plugin does not enforce the rhythmic conventions of species counterpoint, so there is some flexibility about the types of counterpoint it can be used to check. The rules come from Peter Schubert’s Modal Counterpoint, Renaissance Style and are generally in agreement with Tom Pankhurst's Guide to Schenkerian Analysis, http://www.schenkerguide.com/.
 
-#### Tonal Counterpoint, Species I = III
+#### Tonal Counterpoint, Species I - III
 
 ### Currently being updated! (Jan 2021)
 
-The tonal species plugins have been tested successfully with all of the examples in Seth Monahan’s excellent Two-Part Harmonic Species Counterpoint: An Introduction, available at http://sethmonahan.com/TH101HarmonicCounterpoint.html. The procedures for the tonal plugin are derived from the rules laid out in this book.
+The tonal species plugins have been tested successfully with all of the examples in Seth Monahan’s excellent Two-Part Harmonic Species Counterpoint: An Introduction, available at http://sethmonahan.com/TH101HarmonicCounterpoint.html. The tonal plugins evaluation procedures are derived from the rules laid out in this book.
 
 ### Clearing annotations
 
