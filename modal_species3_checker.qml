@@ -25,7 +25,7 @@ MuseScore {
   var colorApproachPerfect: "#FF00B4";
 
   property
-  var colorVoiceLeading: "#3F326D";
+  var colorVoiceLeading: "#009F6B";
 
   property
   var colorLeaps: "#183A7A";
@@ -51,13 +51,14 @@ MuseScore {
     visible: false;
   }
 
-  function markText(dyad, msg, color) {
+  function markText(v, dyad, msg, color) {
     var myText = newElement(Element.STAFF_TEXT);
     myText.text = msg;
     myText.color = color;
     noErrorsFound = false;
     var cursor = curScore.newCursor();
     cursor.rewindToTick(dyad.tick);
+    cursor.track = v * 4;
     cursor.add(myText);
   }
 
@@ -120,15 +121,13 @@ MuseScore {
         dyads[i].tpc = [];
         dyads[i].pitch = [];
         dyads[i].notehead = [];
-        //dyads[i].notehead[0] = false;
-        //dyads[i].notehead[1] = false;
         for (var v = 0; v < 2; v++) {
           if (segment && segment.elementAt(4 * v)) {
             if (segment.elementAt(4 * v).type == Element.CHORD) {
               dyads[i].voices[v] = segment.elementAt(4 * v).notes[0];
               dyads[i].notehead[v] = true;
             } else if (i > 0 && segment.elementAt(4 * v).type == Element.REST) {
-              markText(dyads[i], "No rests allowed\nin Species.", "#000000");
+              markText(v, dyads[i], "No rests allowed\nin Species.", "#000000");
             }
           }
         }
@@ -381,14 +380,14 @@ MuseScore {
             dyads[i - 1].voices[1].color = colorApproachPerfect;
             dyads[i].voices[0].color = colorApproachPerfect;
             dyads[i].voices[1].color = colorApproachPerfect;
-            markText(dyads[i - 1], msg, colorApproachPerfect);
+            markText(0, dyads[i - 1], msg, colorApproachPerfect);
           } else if ("contrary" === dyads[i].motion) {
             msg = "Contrary " + intervalNames[dyads[i].interval + 11] + ".";
             dyads[i - 1].voices[0].color = colorApproachPerfect;
             dyads[i - 1].voices[1].color = colorApproachPerfect;
             dyads[i].voices[0].color = colorApproachPerfect;
             dyads[i].voices[1].color = colorApproachPerfect;
-            markText(dyads[i - 1], msg, colorApproachPerfect);
+            markText(0, dyads[i - 1], msg, colorApproachPerfect);
           } else if ("oblique" === dyads[i].motion &&
             dyads[i - 1].pitch[0] === dyads[i].pitch[0] &&
             dyads[i - 1].pitch[1] === dyads[i].pitch[1]) {
@@ -397,7 +396,7 @@ MuseScore {
             dyads[i - 1].voices[1].color = colorApproachPerfect;
             dyads[i].voices[0].color = colorApproachPerfect;
             dyads[i].voices[1].color = colorApproachPerfect;
-            markText(dyads[i - 1], msg, colorApproachPerfect);
+            markText(0, dyads[i - 1], msg, colorApproachPerfect);
           }
         } else {
           if ("similar" === dyads[i].motion) {
@@ -408,7 +407,7 @@ MuseScore {
             dyads[i - 1].voices[1].color = colorApproachPerfect;
             dyads[i].voices[0].color = colorApproachPerfect;
             dyads[i].voices[1].color = colorApproachPerfect;
-            markText(dyads[i - 1], msg, colorApproachPerfect);
+            markText(0, dyads[i - 1], msg, colorApproachPerfect);
           }
         }
       }
@@ -455,7 +454,7 @@ MuseScore {
           dyads[i].voices[0].color = colorVertical;
           dyads[i].voices[1].color = colorVertical;
           var msg = "Harmonic " + intervalNames[dyads[i].interval + 11] + "\nis not allowed\non downbeat.";
-          markText(dyads[i], msg, colorVertical);
+          markText(0, dyads[i], msg, colorVertical);
         }
       }
     }
@@ -474,13 +473,13 @@ MuseScore {
             dyads[i].voices[v].color = colorVoiceLeading;
             dyads[i + 1].voices[v].color = colorVoiceLeading;
             var msg = "Melodic " + intervalNames[horizontalInterval + 11] + "\nis not allowed.";
-            markText(dyads[i], msg, colorVoiceLeading);
+            markText(v, dyads[i], msg, colorVoiceLeading);
           }
           if (horizontalDistance > 12) {
             dyads[i].voices[v].color = colorVoiceLeading;
             dyads[i + 1].voices[v].color = colorVoiceLeading;
             var msg = "Leaps greater\nthan an octave\nare not allowed.";
-            markText(dyads[i], msg, colorVoiceLeading);
+            markText(v, dyads[i], msg, colorVoiceLeading);
           }
         }
       }
@@ -494,7 +493,7 @@ MuseScore {
         first = i;
         if (!dyads[first].perfect) {
           var msg = "First interval\n must be\nP1, P5, or P8.";
-          markText(dyads[i], msg, colorBeginningEnd);
+          markText(0, dyads[i], msg, colorBeginningEnd);
           dyads[i].voices[0].color = colorBeginningEnd;
           dyads[i].voices[1].color = colorBeginningEnd;
         }
@@ -513,14 +512,14 @@ MuseScore {
         if (dyads[i].voices[0]) dyads[i].voices[0].color = colorBeginningEnd;
         if (dyads[i].voices[1]) dyads[i].voices[1].color = colorBeginningEnd;
         var msg = "Extra note\nafter final.";
-        markText(dyads[i], msg, colorBeginningEnd);
+        markText(0, dyads[i], msg, colorBeginningEnd);
       }
     }
     if (dyads[last] && !dyads[last].perfect) {
       dyads[last].voices[0].color = colorBeginningEnd;
       dyads[last].voices[1].color = colorBeginningEnd;
       var msg = "Must end with\nP1, P5, or P8.";
-      markText(dyads[last], msg, colorBeginningEnd);
+      markText(0, dyads[last], msg, colorBeginningEnd);
     }
     var horizontalInterval = dyads[last].tpc[0] - dyads[penultimate].tpc[0];
     if (dyads[last].pitch[0] > dyads[penultimate].pitch[0] &&
@@ -531,7 +530,7 @@ MuseScore {
       dyads[last].voices[1].color = colorBeginningEnd;
       dyads[penultimate].voices[0].color = colorBeginningEnd;
       dyads[penultimate].voices[1].color = colorBeginningEnd;
-      markText(dyads[penultimate], msg, colorBeginningEnd);
+      markText(0, dyads[penultimate], msg, colorBeginningEnd);
     } else if (dyads[last].tpc[0] && dyads[penultimate].tpc[0]) {
       if (Math.abs(dyads[last].pitch[0] - dyads[penultimate].pitch[0]) > 2) { //larger than a step
         var msg = "Final must be\napproached by step.";
@@ -539,7 +538,7 @@ MuseScore {
         dyads[last].voices[1].color = colorBeginningEnd;
         dyads[penultimate].voices[0].color = colorBeginningEnd;
         dyads[penultimate].voices[1].color = colorBeginningEnd;
-        markText(dyads[penultimate], msg, colorBeginningEnd);
+        markText(0, dyads[penultimate], msg, colorBeginningEnd);
       }
     }
   }
@@ -562,13 +561,13 @@ MuseScore {
             var msg = "Leap to\ndissonance in\n" + voiceNames[v] + " part.";
             dyads[i].voices[v].color = colorLeaps;
             dyads[i + 1].voices[v].color = colorLeaps;
-            markText(dyads[i], msg, colorLeaps);
+            markText(v, dyads[i], msg, colorLeaps);
           } else if (allowedVerticalIntervals.indexOf(dyads[i].interval) < 0 && // dissonance
             Math.abs(dyads[i + 1].pitch[v] - dyads[i].pitch[v]) > 2) { // leap!
             var msg = "Leap from\ndissonance in\n" + voiceNames[v] + " part.";
             dyads[i].voices[v].color = colorLeaps;
             dyads[i + 1].voices[v].color = colorLeaps;
-            markText(dyads[i], msg, colorLeaps);
+            markText(v, dyads[i], msg, colorLeaps);
           }
         }
       }
@@ -605,9 +604,9 @@ MuseScore {
             dyads[i + 1].voices[v].color = colorInfo;
             dyads[i + 2].voices[v].color = colorInfo;
             dyads[i + 3].voices[v].color = colorInfo;
-            dyads[i + 4].voices[v].color = colorInfo;
+            dyads[i + 4].voices[v].color = colorApproachPerfect; // just for extra attention
             var msg = "Double neighbor\nshould resolve\nstepwise, continuing\nin the same\ndirection.";
-            markText(dyads[i + 4], msg, colorInfo);
+            markText(v, dyads[i + 2], msg, colorInfo);
           }
           return true;
         }
@@ -649,17 +648,29 @@ MuseScore {
   }
 
   function stepBack(dyads) {
-    for (var i = 1; i < dyads.length - 1; i++) {
+    for (var i = 0; i < dyads.length - 2; i++) {
+      var lookingForStepback = true;
       for (var v = 0; v < 2; v++) {
-        var testLeap = dyads[i].pitch[v] - dyads[i - 1].pitch[v];
-        var resolution = dyads[i + 1].pitch[v] - dyads[i].pitch[v];
-        if (v != cantusFirmus && dyads[i].pitch[v] && dyads[i - 1].pitch[v] && dyads[i + 1].pitch[v]) {
-          if (testLeap > 7 && resolution != -1 && resolution != -2) {
-            dyads[i - 1].voices[v].color = colorLeaps;
-            dyads[i].voices[v].color = colorLeaps;
-            dyads[i + 1].voices[v].color = colorLeaps;
-            var msg = "Needs to\nstep down after\nlarge leap up\nin " + voiceNames[v] + " part.";
-            markText(dyads[i], msg, colorLeaps);
+        if (v != cantusFirmus && dyads[i].notehead[v]) {
+          for (var top = i + 1; top < dyads.length - 1 && lookingForStepback; top++) {
+            if (dyads[top] && dyads[top].notehead[v]) {
+              var leapDirection = Math.sign(dyads[top].pitch[v] - dyads[i].pitch[v]);
+              var leapSize = Math.abs(dyads[top].pitch[v] - dyads[i].pitch[v]);
+              for (var back = top + 1; back < dyads.length && lookingForStepback; back++) {
+                if (dyads[back] && dyads[back].notehead[v] &&
+                  (dyads[back].pitch[v] != dyads[top].pitch[v])) {
+                  var resolutionDirection = Math.sign(dyads[back].pitch[v] - dyads[top].pitch[v]);
+                  var resolutionSize = Math.abs(dyads[back].pitch[v] - dyads[top].pitch[v]);
+                  if (leapSize > 7 && (resolutionSize > 2 || resolutionDirection === leapDirection)) {
+                    dyads[top].voices[v].color = colorVoiceLeading;
+                    dyads[back].voices[v].color = colorVoiceLeading;
+                    var msg = "Needs to\nstep back after\nlarge leap in\n" + voiceNames[v] + " part.";
+                    markText(v, dyads[i], msg, colorVoiceLeading);
+                  }
+                  lookingForStepback = false;
+                }
+              }
+            }
           }
         }
       }
@@ -683,7 +694,7 @@ MuseScore {
             dyads[i + 2].voices[v].color = colorConsecutive;
             dyads[i + 3].voices[v].color = colorConsecutive;
             var msg = "Avoid more than\ntwo consecutive leaps\nin the same direction."
-            markText(dyads[i + 3], msg, colorConsecutive);
+            markText(v, dyads[i + 3], msg, colorConsecutive);
           }
           var outlinedInterval = dyads[i + 2].tpc[v] - dyads[i].tpc[v];
           if (Math.abs(melodicInterval1) > 2 && // 2 consecutive leaps
@@ -695,7 +706,7 @@ MuseScore {
             dyads[i + 1].voices[v].color = colorConsecutive;
             dyads[i + 2].voices[v].color = colorConsecutive;
             var msg = "Avoid dissonance between\n1st and 3rd notes of\nconsecutive leaps\nin the same direction."
-            markText(dyads[i + 2], msg, colorConsecutive);
+            markText(v, dyads[i], msg, colorConsecutive);
           }
         }
       }
@@ -716,7 +727,7 @@ MuseScore {
             dyads[i + 1].voices[v].color = colorConsecutive;
             dyads[i + 2].voices[v].color = colorConsecutive;
             var msg = "Avoid outlining\ntritone in three\nnote pattern."
-            markText(dyads[i + 1], msg, colorConsecutive);
+            markText(v, dyads[i + 1], msg, colorConsecutive);
           }
         }
       }
@@ -750,7 +761,7 @@ MuseScore {
           dyads[i + 4].voices[0].color = colorConsecutive;
           dyads[i + 4].voices[1].color = colorConsecutive;
           var msg = "Too many\nconsecutive\nthirds.";
-          markText(dyads[i + 4], msg, colorConsecutive);
+          markText(0, dyads[i + 4], msg, colorConsecutive);
         }
       }
     }
@@ -766,11 +777,11 @@ MuseScore {
     console.log("Percentage of perfect intervals:", ratio * 100, "%");
     if (ratio >= 0.8) {
       var msg = "Too many perfect\nintervals.";
-      markText(dyads[0], msg, colorInfo);
+      markText(0, dyads[0], msg, colorInfo);
     }
     if (ratio > 0.55 && ratio < 0.8) {
       var msg = "Maybe too many\nperfect intervals.";
-      markText(dyads[0], msg, colorInfo);
+      markText(0, dyads[0], msg, colorInfo);
     }
   }
 
@@ -789,7 +800,7 @@ MuseScore {
     console.log("Percentage of leaps:", ratio * 100, "%");
     if (ratio > 0.4) {
       var msg = "Too many leaps.";
-      markText(dyads[0], msg, colorInfo);
+      markText(0, dyads[0], msg, colorInfo);
     }
   }
 
@@ -810,7 +821,7 @@ MuseScore {
     }
     for (var v = 0; v < 2; v++) {
       var voiceRange = hi[v] - lo[v];
-      if (v != cantusFirmus && voiceRange < 10) markText(dyads[0], "Try to cover a\nwider melodic range\nin " + voiceNames[v] + " part.", colorInfo);
+      if (v != cantusFirmus && voiceRange < 10) markText(v, dyads[0], "Try to cover a\nwider melodic range\nin " + voiceNames[v] + " part.", colorInfo);
     }
   }
 
@@ -836,7 +847,7 @@ MuseScore {
           dyads[next].voices[1].color = colorVertical;
           dyads[i].voices[0].color = colorVertical;
           dyads[i].voices[1].color = colorVertical;
-          markText(dyads[i], msg, colorVertical);
+          markText(0, dyads[i], msg, colorVertical);
           break;
         }
       }
@@ -870,12 +881,11 @@ MuseScore {
     for (var i = 0; i < dyads.length; i++) {
       if (dyads[i] && dyads[i].pitch[0] && dyads[i].pitch[1]) {
         if (dyads[i].pitch[1] > dyads[i].pitch[0]) {
-          if (dyads[i].downbeat) {
-            dyads[i].voices[0].color = colorInfo;
-            dyads[i].voices[1].color = colorInfo;
-          }
+          if (dyads[i].notehead[0]) dyads[i].voices[0].color = colorInfo;
+          if (dyads[i].notehead[1]) dyads[i].voices[1].color = colorInfo;
           var msg = "Don't cross\nvoices.";
-          markText(dyads[i], msg, colorInfo);
+          if (dyads[i].notehead[0]) markText(0, dyads[i], msg, colorInfo);
+          else if (dyads[i].notehead[1]) markText(1, dyads[i], msg, colorInfo);
         }
       }
     }
