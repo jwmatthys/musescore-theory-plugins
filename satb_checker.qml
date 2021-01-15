@@ -275,12 +275,18 @@ MuseScore {
     return (Math.sign(test - lo) === Math.sign(hi - test));
   }
 
+  function isWithin(test, lo, hi) {
+    if (test > hi) return false;
+    if (test < low) return false;
+    return true;
+  }
+
   function checkVoiceRanges(chords) {
     for (var i = 0; i < chords.length; i++) {
       if (chords[i].pitches) {
         for (var v = 0; v < chords[i].pitches.length; v++) {
           if (chords[i].pitches) {
-            if (!isBetween(chords[i].pitches[v], voiceRanges[v][0], voiceRanges[v][1])) {
+            if (!isWithin(chords[i].pitches[v], voiceRanges[v][0], voiceRanges[v][1])) {
               // voice is out of range - color note and add error message
               chords[i].voices[v].color = colorOrchestrationError;
               var msg = "Out of range (" + voiceNames[v] + ").";
