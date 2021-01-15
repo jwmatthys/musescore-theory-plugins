@@ -275,8 +275,8 @@ MuseScore {
     return (Math.sign(test - lo) === Math.sign(hi - test));
   }
 
-  function isWithin(test, lo, hi) {
-    if (test > hi) return false;
+  function isWithin(test, low, high) {
+    if (test > high) return false;
     if (test < low) return false;
     return true;
   }
