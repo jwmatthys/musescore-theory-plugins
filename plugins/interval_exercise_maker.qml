@@ -9,6 +9,7 @@ MuseScore {
   version: "0.1"
   description: "Create a practice worksheet of interval identification exercises"
   pluginType: "dialog"
+  requiresScore: false
 
   id: window
   width: 265;height: 260;
