@@ -2,7 +2,7 @@ import QtQuick 2.1
 import QtQuick.Dialogs 1.0
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
-import MuseScore 1.0
+import MuseScore 3.0
 
 MuseScore {
   menuPath: "Exercises.Create.Create Seventh Chord ID Exercises"
@@ -226,19 +226,14 @@ MuseScore {
   function createNote(tpc, oct) {
     var note = newElement(Element.NOTE);
     note.pitch = tpc2pc(tpc) + 12 * (oct + 1);
-    note.tpc1 = tpc;
-    note.tpc2 = tpc;
-    note.headType = NoteHead.HEAD_AUTO;
     return note;
+
   }
 
   // create note with known midi value
   function createNote2(tpc, pitch) {
     var note = newElement(Element.NOTE);
     note.pitch = pitch;
-    note.tpc1 = tpc;
-    note.tpc2 = tpc;
-    note.headType = NoteHead.HEAD_AUTO;
     return note;
   }
 
@@ -279,7 +274,10 @@ MuseScore {
       if (majorMinorSeventhCheckbox.checked) subtitle += "|  MM/Mm/mm  ";
       if (dimSeventhCheckbox.checked) subtitle += "|  dim7/<sup>Ø</sup>7  ";
       var probs = numProblems.value;
-      var score = newScore("Seventh Chord Identification Exercises", "treble", probs);score.startCmd();score.addText("title", "Seventh Chord Identification Exercises");score.addText("subtitle", subtitle);
+      var score = newScore("Seventh Chord Identification Exercises", "vibraphone", probs);
+      score.startCmd();
+      score.addText("title", "Seventh Chord Identification Exercises");
+      score.addText("subtitle", subtitle);
 
       var cursor = score.newCursor();cursor.track = 0;
 
@@ -298,8 +296,10 @@ MuseScore {
           var lowtpc = difficulty[difficultySlider.value - 1][0];
           var hightpc = difficulty[difficultySlider.value - 1][1];
           var bassNote, upperNote1, upperNote2, upperNote3;
+          var tpc0, tpc1, tpc2, tpc3;
           while (true) {
-            bassNote = createNote(rrand_i(lowtpc, hightpc + 1), 4, 5);
+            tpc0 = rrand_i(lowtpc, hightpc + 1);
+            bassNote = createNote(tpc0, 4, 5);
             var choice = rrand_i(0, 20);
             if (choice == 0 && majorMinorSeventhCheckbox.checked && rootPositionCheckbox.checked) break;
             if (choice == 1 && majorMinorSeventhCheckbox.checked && rootPositionCheckbox.checked) break;
@@ -325,115 +325,189 @@ MuseScore {
 
           if (choice == 0) {
             // MM
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc + 5, bassNote.pitch + 11);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 + 1, bassNote.pitch + 7);
+            upperNote3 = createNote2(tpc0 + 5, bassNote.pitch + 11);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 + 1;
+            tpc3 = tpc0 + 5;
           } else if (choice == 1) {
             // Mm
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc - 2, bassNote.pitch + 10);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 + 1, bassNote.pitch + 7);
+            upperNote3 = createNote2(tpc0 - 2, bassNote.pitch + 10);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 + 1;
+            tpc3 = tpc0 - 2;
           } else if (choice == 2) {
             // mm
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc - 2, bassNote.pitch + 10);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 + 1, bassNote.pitch + 7);
+            upperNote3 = createNote2(tpc0 - 2, bassNote.pitch + 10);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 + 1;
+            tpc3 = tpc0 - 2;
           } else if (choice == 3) {
             // half dim
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 6, bassNote.pitch + 6);
-            upperNote3 = createNote2(bassNote.tpc - 2, bassNote.pitch + 10);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 - 6, bassNote.pitch + 6);
+            upperNote3 = createNote2(tpc0 - 2, bassNote.pitch + 10);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 - 6;
+            tpc3 = tpc0 - 2;
           } else if (choice == 4) {
             // dim7
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 6, bassNote.pitch + 6);
-            upperNote3 = createNote2(bassNote.tpc - 9, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 - 6, bassNote.pitch + 6);
+            upperNote3 = createNote2(tpc0 - 9, bassNote.pitch + 9);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 - 6;
+            tpc3 = tpc0 - 9;
           } else if (choice == 5) {
             // MM, 1st inv
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc - 4, bassNote.pitch + 8);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 + 1, bassNote.pitch + 7);
+            upperNote3 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 + 1;
+            tpc3 = tpc0 - 4;
           } else if (choice == 6) {
             // Mm, 1st inv
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 6, bassNote.pitch + 6);
-            upperNote3 = createNote2(bassNote.tpc - 4, bassNote.pitch + 8);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 - 6, bassNote.pitch + 6);
+            upperNote3 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 - 6;
+            tpc3 = tpc0 - 4;
           } else if (choice == 7) {
             // mm, 1st inv
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 + 1, bassNote.pitch + 7);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 + 1;
+            tpc3 = tpc0 + 3;
           } else if (choice == 8) {
             // half dim, 1st inv
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 + 1, bassNote.pitch + 7);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 + 1;
+            tpc3 = tpc0 + 3;
           } else if (choice == 9) {
             // dim7, 1st inv
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc + 6, bassNote.pitch + 6);
-            upperNote3 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 - 6, bassNote.pitch + 6);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 - 6;
+            tpc3 = tpc0 + 3;
           } else if (choice == 10) {
             // MM, 2nd inv
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc - 1, bassNote.pitch + 5);
-            upperNote3 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 - 1, bassNote.pitch + 5);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 - 1;
+            tpc3 = tpc0 + 3;
           } else if (choice == 11) {
             // Mm, 2nd inv
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 1, bassNote.pitch + 5);
-            upperNote3 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 - 1, bassNote.pitch + 5);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 - 1;
+            tpc3 = tpc0 + 3;
           } else if (choice == 12) {
             // mm, 2nd inv
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 1, bassNote.pitch + 5);
-            upperNote3 = createNote2(bassNote.tpc - 4, bassNote.pitch + 8);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 - 1, bassNote.pitch + 5);
+            upperNote3 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 - 1;
+            tpc3 = tpc0 - 4;
           } else if (choice == 13) {
             // half dim, 2nd inv
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 6, bassNote.pitch + 6);
-            upperNote3 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 + 6, bassNote.pitch + 6);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 + 6;
+            tpc3 = tpc0 + 3;
           } else if (choice == 14) {
             // dim7, 2nd inv
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc + 6, bassNote.pitch + 6);
-            upperNote3 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 + 6, bassNote.pitch + 6);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 + 6;
+            tpc3 = tpc0 + 3;
           } else if (choice == 15) {
             // MM
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc + 5, bassNote.pitch - 1);
+            upperNote1 = createNote2(tpc0 - 5, bassNote.pitch + 1);
+            upperNote2 = createNote2(tpc0 - 1, bassNote.pitch + 5);
+            upperNote3 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 - 5;
+            tpc2 = tpc0 - 1;
+            tpc3 = tpc0 - 4;
           } else if (choice == 16) {
             // Mm
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc - 2, bassNote.pitch - 2);
+            upperNote1 = createNote2(tpc0 + 2, bassNote.pitch + 2);
+            upperNote2 = createNote2(tpc0 + 6, bassNote.pitch + 6);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 + 2;
+            tpc2 = tpc0 + 6;
+            tpc3 = tpc0 + 3;
           } else if (choice == 17) {
             // mm
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
-            upperNote3 = createNote2(bassNote.tpc - 2, bassNote.pitch - 2);
+            upperNote1 = createNote2(tpc0 + 2, bassNote.pitch + 2);
+            upperNote2 = createNote2(tpc0 - 1, bassNote.pitch + 5);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 + 2;
+            tpc2 = tpc0 - 1;
+            tpc3 = tpc0 + 3;
           } else if (choice == 18) {
             // half dim
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 6, bassNote.pitch + 6);
-            upperNote3 = createNote2(bassNote.tpc - 2, bassNote.pitch - 2);
+            upperNote1 = createNote2(tpc0 + 2, bassNote.pitch + 2);
+            upperNote2 = createNote2(tpc0 - 1, bassNote.pitch + 5);
+            upperNote3 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 + 2;
+            tpc2 = tpc0 - 1;
+            tpc3 = tpc0 - 4;
           } else if (choice == 19) {
             // dim7
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 6, bassNote.pitch + 6);
-            upperNote3 = createNote2(bassNote.tpc - 9, bassNote.pitch - 3);
+            upperNote1 = createNote2(tpc0 + 9, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 + 6, bassNote.pitch + 6);
+            upperNote3 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 + 9;
+            tpc2 = tpc0 + 6;
+            tpc3 = tpc0 + 3;
           }
           chord.add(bassNote);
           chord.add(upperNote1); //add notes to the chord
           chord.add(upperNote2); //add notes to the chord
           chord.add(upperNote3); //add notes to the chord
+          chord.notes[1].tpc = tpc0;
+          chord.notes[2].tpc = tpc1;
+          chord.notes[3].tpc = tpc2;
+          chord.notes[4].tpc = tpc3;
+          chord.notes[1].tpc1 = tpc0;
+          chord.notes[2].tpc1 = tpc1;
+          chord.notes[3].tpc1 = tpc2;
+          chord.notes[4].tpc1 = tpc3;
+          chord.notes[1].tpc2 = tpc0;
+          chord.notes[2].tpc2 = tpc1;
+          chord.notes[3].tpc2 = tpc2;
+          chord.notes[4].tpc2 = tpc3;
+
           var notes = chord.notes;
           chord.remove(notes[0]);
         }
         cursor.next();
       }
-      score.doLayout();score.endCmd();Qt.quit();
+      score.endCmd();
+      Qt.quit();
     }
   }
 

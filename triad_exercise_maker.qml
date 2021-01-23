@@ -2,7 +2,7 @@ import QtQuick 2.1
 import QtQuick.Dialogs 1.0
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
-import MuseScore 1.0
+import MuseScore 3.0
 
 MuseScore {
   menuPath: "Exercises.Create.Create Triad ID Exercises"
@@ -204,19 +204,18 @@ MuseScore {
   function createNote(tpc, oct) {
     var note = newElement(Element.NOTE);
     note.pitch = tpc2pc(tpc) + 12 * (oct + 1);
-    note.tpc1 = tpc;
-    note.tpc2 = tpc;
-    note.headType = NoteHead.HEAD_AUTO;
+    note.tpc = tpc;
+    console.log("createNote:", tpc, oct);
     return note;
+
   }
 
   // create note with known midi value
   function createNote2(tpc, pitch) {
     var note = newElement(Element.NOTE);
     note.pitch = pitch;
-    note.tpc1 = tpc;
-    note.tpc2 = tpc;
-    note.headType = NoteHead.HEAD_AUTO;
+    note.tpc = tpc;
+    console.log("createNote2:", tpc, pitch);
     return note;
   }
 
@@ -257,7 +256,7 @@ MuseScore {
       if (majorMinorCheckbox.checked) subtitle += "|  Maj/min  ";
       if (dimAugCheckbox.checked) subtitle += "|  dim/Aug  ";
       var probs = numProblems.value;
-      var score = newScore("Triad Identification Exercises", "treble", probs);
+      var score = newScore("Triad Identification Exercises", "vibraphone", probs);
       score.startCmd();
       score.addText("title", "Triad Identification Exercises");
       score.addText("subtitle", subtitle);
@@ -279,7 +278,9 @@ MuseScore {
         if (chord.type == Element.CHORD) {
           var lowtpc = difficulty[difficultySlider.value - 1][0];
           var hightpc = difficulty[difficultySlider.value - 1][1];
-          var bassNote = createNote(rrand_i(lowtpc, hightpc + 1), 4, 5);
+          var tpc0, tpc1, tpc2;
+          tpc0 = rrand_i(lowtpc, hightpc + 1);
+          var bassNote = createNote(tpc0, 4, 5);
           chord.add(bassNote);
           var upperNote1, upperNote2;
           while (true) {
@@ -300,61 +301,94 @@ MuseScore {
 
           if (choice == 0) {
             // major
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 + 1, bassNote.pitch + 7);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 + 1;
           } else if (choice == 1) {
             // minor
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc + 1, bassNote.pitch + 7);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 + 1, bassNote.pitch + 7);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 + 1;
           } else if (choice == 2) {
             // diminished
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 6, bassNote.pitch + 6);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 - 6, bassNote.pitch + 6);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 - 6;
           } else if (choice == 3) {
             // augmented
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 8, bassNote.pitch + 8);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 + 8, bassNote.pitch + 8);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 + 8;
           } else if (choice == 4) {
             // major, 1st inversion
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc - 4, bassNote.pitch + 8);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 - 4;
           } else if (choice == 5) {
             // minor, 1st inversion
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 + 3;
           } else if (choice == 6) {
             // diminished, 1st inversion
-            upperNote1 = createNote2(bassNote.tpc - 3, bassNote.pitch + 3);
-            upperNote2 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 - 3, bassNote.pitch + 3);
+            upperNote2 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 - 3;
+            tpc2 = tpc0 + 3;
           } else if (choice == 7) {
             // augmented, 1st inversion
-            upperNote1 = createNote2(bassNote.tpc + 4, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc - 4, bassNote.pitch + 8);
+            upperNote1 = createNote2(tpc0 + 4, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 + 4;
+            tpc2 = tpc0 - 4;
           } else if (choice == 8) {
             // major, 2nd inversion
-            upperNote1 = createNote2(bassNote.tpc - 1, bassNote.pitch + 5);
-            upperNote2 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 - 1, bassNote.pitch + 5);
+            upperNote2 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 - 1;
+            tpc2 = tpc0 + 3;
           } else if (choice == 9) {
             // minor, 2nd inversion
-            upperNote1 = createNote2(bassNote.tpc - 1, bassNote.pitch + 5);
-            upperNote2 = createNote2(bassNote.tpc - 4, bassNote.pitch + 8);
+            upperNote1 = createNote2(tpc0 - 1, bassNote.pitch + 5);
+            upperNote2 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 - 1;
+            tpc2 = tpc0 - 4;
           } else if (choice == 10) {
             // diminished, 2nd inversion
-            upperNote1 = createNote2(bassNote.tpc + 6, bassNote.pitch + 6);
-            upperNote2 = createNote2(bassNote.tpc + 3, bassNote.pitch + 9);
+            upperNote1 = createNote2(tpc0 + 6, bassNote.pitch + 6);
+            upperNote2 = createNote2(tpc0 + 3, bassNote.pitch + 9);
+            tpc1 = tpc0 + 6;
+            tpc2 = tpc0 + 3;
           } else if (choice == 11) {
             // augmented, 2nd inversion
-            upperNote1 = createNote2(bassNote.tpc - 8, bassNote.pitch + 4);
-            upperNote2 = createNote2(bassNote.tpc - 4, bassNote.pitch + 8);
+            upperNote1 = createNote2(tpc0 - 8, bassNote.pitch + 4);
+            upperNote2 = createNote2(tpc0 - 4, bassNote.pitch + 8);
+            tpc1 = tpc0 - 8;
+            tpc2 = tpc0 - 4;
           }
           chord.add(upperNote1); //add notes to the chord
           chord.add(upperNote2); //add notes to the chord
+          chord.notes[1].tpc = tpc0;
+          chord.notes[1].tpc1 = tpc0;
+          chord.notes[1].tpc2 = tpc0;
+          chord.notes[2].tpc = tpc1;
+          chord.notes[2].tpc1 = tpc1;
+          chord.notes[2].tpc2 = tpc1;
+          chord.notes[3].tpc = tpc2;
+          chord.notes[3].tpc1 = tpc2;
+          chord.notes[3].tpc2 = tpc2;
+
           var notes = chord.notes;
           chord.remove(notes[0]);
         }
         cursor.next();
       }
-      score.doLayout();
       score.endCmd();
       Qt.quit();
     }

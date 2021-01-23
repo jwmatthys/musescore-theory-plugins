@@ -303,11 +303,14 @@ MuseScore {
         var chord = cursor.element; //get the chord created when 1st note was inserted
         if (chord.type == Element.CHORD) {
           var testnote1, testnote2;
+          var tpc0, tpc1;
           while (true) {
             var lowtpc = difficulty[difficultySlider.value - 1][0];
             var hightpc = difficulty[difficultySlider.value - 1][1];
-            testnote1 = createNote(rrand_i(lowtpc, hightpc + 1), rrand_i(4, 6));
-            testnote2 = createNote(rrand_i(lowtpc, hightpc + 1), rrand_i(4, 6));
+            tpc0 = rrand_i(lowtpc, hightpc + 1);
+            tpc1 = rrand_i(lowtpc, hightpc + 1);
+            testnote1 = createNote(tpc0, rrand_i(4, 6));
+            testnote2 = createNote(tpc1, rrand_i(4, 6));
             var testInterval = checkInterval(testnote1, testnote2);
             if (testInterval == 'A1') continue;
             if (testInterval[0] == 'P' && perfectIntervalCheckbox.checked) break;
@@ -320,6 +323,12 @@ MuseScore {
           }
           chord.add(testnote1); //add notes to the chord
           chord.add(testnote2); //add notes to the chord
+          chord.notes[1].tpc = tpc0;
+          chord.notes[2].tpc = tpc1;
+          chord.notes[1].tpc1 = tpc0;
+          chord.notes[2].tpc1 = tpc1;
+          chord.notes[1].tpc2 = tpc0;
+          chord.notes[2].tpc2 = tpc1;
           var notes = chord.notes;
           chord.remove(notes[0]);
         }
