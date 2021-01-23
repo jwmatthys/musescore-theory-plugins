@@ -2,7 +2,7 @@ import QtQuick 2.1
 import QtQuick.Dialogs 1.0
 import QtQuick.Controls 1.0
 import QtQuick.Layouts 1.0
-import MuseScore 1.0
+import MuseScore 3.0
 
 MuseScore {
   menuPath: "Exercises.Create.Create Interval ID Exercises"
@@ -246,7 +246,6 @@ MuseScore {
     note.pitch = tpc2pc(tpc) + 12 * (oct + 1);
     note.tpc1 = tpc;
     note.tpc2 = tpc;
-    note.headType = NoteHead.HEAD_AUTO;
     return note;
   }
 
@@ -283,7 +282,7 @@ MuseScore {
       if (dimaugIntervalCheckbox.checked) subtitle += "|  dim/Aug  ";
       if (doubleDimaugIntervalCheckbox.checked) subtitle += "|  dd/AA";
       var probs = numProblems.value;
-      var score = newScore("Interval Identification Exercises", "treble", probs);
+      var score = newScore("Interval Identification Exercises", "vibraphone", probs);
       score.startCmd();
       score.addText("title", "Interval Identification Exercises");
       score.addText("subtitle", subtitle);
@@ -326,7 +325,6 @@ MuseScore {
         }
         cursor.next();
       }
-      score.doLayout();
       score.endCmd();
       Qt.quit();
     }
