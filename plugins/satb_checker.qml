@@ -5,7 +5,7 @@ import MuseScore 3.0
 MuseScore {
   menuPath: "Plugins.Proof Reading.SATB Checker"
   description: "Check 4-part writing for errors.\nIf roman numerals are present, will check for correct pitches.\nRoman numerals may also include applied (secondary) chords, Neapolitan, and augmented sixth chords.";
-  version: "0.31"
+  version: "0.32"
 
   property
   var colorOrchestrationError: "#AF6E4D"; // Range / Crossing / Spacing - brown
