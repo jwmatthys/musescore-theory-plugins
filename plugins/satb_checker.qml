@@ -156,15 +156,18 @@ MuseScore {
 
           chords[index].roman = leftRomanNumeralClean;
           var chordDef = chordDefinitions[leftRomanNumeralClean];
-          chords[index].romanPitches = [];
+          chords[index].romanPitches;
           chords[index].key = tonicTPC;
-          for (var i = 0; i < chordDef.length; i++) {
-            chords[index].romanPitches[i] = chordDef[i];
+          if (chordDef) {
+            chords[index].romanPitches = [];
+            for (var i = 0; i < chordDef.length; i++) {
+              chords[index].romanPitches[i] = chordDef[i];
+            }
+            chords[index].quality = quality;
+            addSeventhNinth(chords[index], quality, figBass);
+            secondaryAdjustments(chords[index].romanPitches, tonicTPC);
+            chords[index].inversion = inversion;
           }
-          chords[index].quality = quality;
-          addSeventhNinth(chords[index], quality, figBass);
-          secondaryAdjustments(chords[index].romanPitches, tonicTPC);
-          chords[index].inversion = inversion;
           //console.log("pitches:", chords[index].tpc, "romanPitches:", chords[index].romanPitches);
         }
       }
@@ -176,7 +179,7 @@ MuseScore {
   }
 
   function getRoman(rn) {
-    return rn.split('/')[0].replace(/[2345679]/g, '');
+    return rn.split('/')[0].replace(/[^IiVvo0NFrGe/]/g, '');
   }
 
   function getFiguredBass(rn) {
@@ -336,7 +339,6 @@ MuseScore {
         var correctPitches = chords[i].romanPitches;
         for (var v = 0; v < chords[i].pitches.length; v++) {
           var testPitch = chords[i].tpc[v];
-          console.log("testPitch:",testPitch, correctPitches);
           if (correctPitches.indexOf(testPitch) < 0) {
             var correctPitch = correctPitches[v];
             chords[i].voices[v].color = colorPitchError;
@@ -356,7 +358,7 @@ MuseScore {
 
   function checkForWrongInversion(chords) {
     for (var i = 0; i < chords.length; i++) {
-      if (chords[i].tpc && chords[i].roman) {
+      if (chords[i].tpc && chords[i].romanPitches) {
         var inversion = chords[i].inversion;
         var correctBassNote = chords[i].romanPitches[inversion];
         var correctPitches = chords[i].romanPitches;
@@ -671,7 +673,7 @@ MuseScore {
     var segment = cursor.segment;
 
     key = cursor.keySignature + majorOrMinor(segment, processAll, endTick);
-    console.log("key:",key);
+    console.log("key:", key);
     var chords = getChords(segment, processAll, endTick);
 
     checkVoiceSpacing(chords);
