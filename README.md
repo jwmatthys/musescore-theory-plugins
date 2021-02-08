@@ -4,7 +4,7 @@ This is a set of practical plugins to assist with identifying intervals and chor
 
 ## Latest MuseScore3 Requirement
 
-The checker plugins have been updated to work with the latest release of MuseScore3. The SATB checker and species counterpoint checkers require MuseScore 3.5.2 in order to correctly read the roman numeral analysis.
+The checker plugins have been updated to work with the latest release of MuseScore3. The SATB checker and species counterpoint checkers require MuseScore 3.5.2 or later in order to correctly read the roman numeral analysis.
 
 ## Installation
 
