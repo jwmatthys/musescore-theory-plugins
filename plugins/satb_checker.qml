@@ -334,8 +334,9 @@ MuseScore {
     for (var i = 0; i < chords.length; i++) {
       if (chords[i].romanPitches) {
         var correctPitches = chords[i].romanPitches;
-        for (var v = 0; v < chords[i].romanPitches.length; v++) {
+        for (var v = 0; v < chords[i].pitches.length; v++) {
           var testPitch = chords[i].tpc[v];
+          console.log("testPitch:",testPitch, correctPitches);
           if (correctPitches.indexOf(testPitch) < 0) {
             var correctPitch = correctPitches[v];
             chords[i].voices[v].color = colorPitchError;
@@ -670,6 +671,7 @@ MuseScore {
     var segment = cursor.segment;
 
     key = cursor.keySignature + majorOrMinor(segment, processAll, endTick);
+    console.log("key:",key);
     var chords = getChords(segment, processAll, endTick);
 
     checkVoiceSpacing(chords);
