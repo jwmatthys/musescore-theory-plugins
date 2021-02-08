@@ -43,6 +43,8 @@ MuseScore {
 
   property
   var key: 14;
+  property
+  var keyMode: 0;
 
   MessageDialog {
     id: msgWarning
@@ -114,13 +116,15 @@ MuseScore {
     }
   }
 
-  function getChords(segment, processAll, endTick) {
+  function getChords(cursor, processAll, endTick) {
     var index = 0;
     var measure = 1;
     var chords = new Array();
     chords[index] = new Object;
 
-    while (segment && (processAll || segment.tick < endTick)) {
+    while (cursor.next()) {
+      var segment = cursor.segment;
+      if (!processAll && segment.tick >= endTick) break;
       if (segment.tick > chords[index].tick) {
         index++;
         chords[index] = new Object;
@@ -148,17 +152,14 @@ MuseScore {
           }
           var figBass = getFiguredBass(rawRomanNumeral);
           var leftRomanNumeralClean = getRoman(rawRomanNumeral);
-          var tonicTPC = getTonicTPC(rawRomanNumeral);
+          var tonicTPC = getTonicTPC(rawRomanNumeral, measure) + cursor.keySignature + keyMode;
           var quality = getQuality(leftRomanNumeralClean);
           var inversion = getInversion(rawRomanNumeral);
-
-          //console.log(rawRomanNumeral, figBass, leftRomanNumeralClean, tonicTPC, quality);
-
           chords[index].roman = leftRomanNumeralClean;
           var chordDef = chordDefinitions[leftRomanNumeralClean];
-          chords[index].romanPitches;
-          chords[index].key = tonicTPC;
           if (chordDef) {
+            chords[index].romanPitches;
+            chords[index].key = tonicTPC;
             chords[index].romanPitches = [];
             for (var i = 0; i < chordDef.length; i++) {
               chords[index].romanPitches[i] = chordDef[i];
@@ -168,12 +169,16 @@ MuseScore {
             secondaryAdjustments(chords[index].romanPitches, tonicTPC);
             chords[index].inversion = inversion;
           }
+          else {
+            var msg = "Unrecognized\nroman numeral\n\""+leftRomanNumeralClean+"\".";
+            markText(chords[index], msg, colorOrchestrationError);
+          }
           //console.log("pitches:", chords[index].tpc, "romanPitches:", chords[index].romanPitches);
         }
       }
 
       if (segment.elementAt(0) && segment.elementAt(0).type == Element.BAR_LINE) measure++;
-      segment = segment.next;
+      //segment = segment.next;
     }
     return chords;
   }
@@ -190,14 +195,14 @@ MuseScore {
     var tonic = rn.replace(/[2345679]/g, '').split('/')[1];
     if (tonic) {
       var tonicChord = chordDefinitions[tonic];
-      if (tonicChord[0]) return tonicChord[0] + key;
+      if (tonicChord[0]) return tonicChord[0];
       else {
         msgWarning.text = "There's something wrong with the secondary chord in measure " + measure;
         msgWarning.visible = true;
         Qt.quit();
       }
     }
-    return key;
+    return 0;
   }
 
   function secondaryAdjustments(c, tonic) {
@@ -672,9 +677,9 @@ MuseScore {
     }
     var segment = cursor.segment;
 
-    key = cursor.keySignature + majorOrMinor(segment, processAll, endTick);
-    console.log("key:", key);
-    var chords = getChords(segment, processAll, endTick);
+    keyMode = majorOrMinor(segment, processAll, endTick);
+    console.log("keyMode:", keyMode);
+    var chords = getChords(cursor, processAll, endTick);
 
     checkVoiceSpacing(chords);
     checkVoiceCrossing(chords);
