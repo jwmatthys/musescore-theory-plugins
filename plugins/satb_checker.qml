@@ -20,7 +20,7 @@ MuseScore {
   property
   var colorParallelPerfect: "#FF4F00";
   property
-  var colorHiddenPerfect: "#C74375";
+  var colorContraryPerfect: "#C74375";
   property
   var colorVoiceLeadingWarning: "#DA9100";
   property
@@ -472,12 +472,12 @@ MuseScore {
                   markText(chords[i], msg, colorParallelPerfect);
                 } else if ("contrary" == direction) {
                   // HIDDEN (contrary) OCTAVES!
-                  chords[i].voices[lowerVoice].color = colorHiddenPerfect;
-                  chords[i].voices[upperVoice].color = colorHiddenPerfect;
-                  chords[i + 1].voices[lowerVoice].color = colorHiddenPerfect;
-                  chords[i + 1].voices[upperVoice].color = colorHiddenPerfect;
-                  var msg = "Hidden P8\n(" + voiceNames[lowerVoice] + "-" + voiceNames[upperVoice] + ").";
-                  markText(chords[i], msg, colorHiddenPerfect);
+                  chords[i].voices[lowerVoice].color = colorContraryPerfect;
+                  chords[i].voices[upperVoice].color = colorContraryPerfect;
+                  chords[i + 1].voices[lowerVoice].color = colorContraryPerfect;
+                  chords[i + 1].voices[upperVoice].color = colorContraryPerfect;
+                  var msg = "Contrary P8\n(" + voiceNames[lowerVoice] + "-" + voiceNames[upperVoice] + ").";
+                  markText(chords[i], msg, colorContraryPerfect);
                 }
               }
             }
@@ -496,12 +496,12 @@ MuseScore {
                   markText(chords[i], msg, colorParallelPerfect);
                 } else if ("contrary" == direction) {
                   // HIDDEN (contrary) OCTAVES!
-                  chords[i].voices[lowerVoice].color = colorHiddenPerfect;
-                  chords[i].voices[upperVoice].color = colorHiddenPerfect;
-                  chords[i + 1].voices[lowerVoice].color = colorHiddenPerfect;
-                  chords[i + 1].voices[upperVoice].color = colorHiddenPerfect;
-                  var msg = "Hidden P5\n(" + voiceNames[lowerVoice] + "-" + voiceNames[upperVoice] + ").";
-                  markText(chords[i], msg, colorHiddenPerfect);
+                  chords[i].voices[lowerVoice].color = colorContraryPerfect;
+                  chords[i].voices[upperVoice].color = colorContraryPerfect;
+                  chords[i + 1].voices[lowerVoice].color = colorContraryPerfect;
+                  chords[i + 1].voices[upperVoice].color = colorContraryPerfect;
+                  var msg = "Contrary P5\n(" + voiceNames[lowerVoice] + "-" + voiceNames[upperVoice] + ").";
+                  markText(chords[i], msg, colorContraryPerfect);
                 }
               }
             }
