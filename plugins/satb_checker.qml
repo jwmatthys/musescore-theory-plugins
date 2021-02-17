@@ -71,12 +71,15 @@ MuseScore {
   function getRomanNumeral(segment, measure) {
     var aCount = 0;
     var annotation = segment.annotations[aCount];
+    var rn = "";
     while (annotation) {
       if (annotation.type == Element.HARMONY)
-        return annotation;
+      {
+        rn = annotation;
+      }
       annotation = segment.annotations[++aCount];
     }
-    return null;
+    return rn;
   }
 
   function assignVoices(segment, measure) {
