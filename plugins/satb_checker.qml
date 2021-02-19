@@ -36,6 +36,23 @@ MuseScore {
     [60, 79] // soprano
   ];
 
+  property
+  var allRomanNumerals: [
+    "I",
+    "II",
+    "III",
+    "IV",
+    "V",
+    "VI",
+    "VII",
+    "FR",
+    "GER",
+    "IT",
+    "CAD",
+    "CT",
+    "N"
+  ];
+
   property bool majorMode: true;
   property bool noErrorsFound: true; // yet... :)
   property bool processAll: false;
@@ -68,21 +85,25 @@ MuseScore {
     cursor.add(myText);
   }
 
-  function getRomanNumeral(segment, measure) {
+  function isThisARomanNumeral(annotation) {
+    var testElement = annotation.text.toUpperCase().split('/')[0].replace(/[^IVNFRGERCADT/]/g, '');
+    if (allRomanNumerals.indexOf(testElement) >= 0) return true;
+    return false;
+  }
+
+  function getRomanNumeral(segment) {
     var aCount = 0;
     var annotation = segment.annotations[aCount];
-    var rn = "";
     while (annotation) {
-      if (annotation.type == Element.HARMONY)
-      {
-        rn = annotation;
+      if (annotation.type == Element.HARMONY) {
+        if (isThisARomanNumeral(annotation)) return annotation;
       }
       annotation = segment.annotations[++aCount];
     }
-    return rn;
+    return null;
   }
 
-  function assignVoices(segment, measure) {
+  function assignVoices(segment) {
     // first, check for keyboard style
     var voices = [];
     var voiceIndex = 0;
@@ -92,11 +113,7 @@ MuseScore {
         if (thisLayerNotes) {
           for (var v = 0; v < thisLayerNotes.length; v++) {
             voices[voiceIndex++] = thisLayerNotes[v];
-            if (voiceIndex > 4) {
-              msgWarning.text = "Too many notes in measure " + measure + ".\nThis plugin only works on 4 voices.";
-              msgWarning.visible = true;
-              Qt.quit();
-            }
+            //console.log(thisLayerNotes[v].pitch);
           }
         }
       }
@@ -104,28 +121,22 @@ MuseScore {
     return voices;
   }
 
-  function getPitches(segment, measure) {
+  function getPitches(segment) {
     // step 1: read pitches
     if (segment && segment.elementAt(4) &&
       (segment.elementAt(4).type == Element.CHORD ||
         segment.elementAt(4).type == Element.REST)) {
 
-      var voices = assignVoices(segment, measure);
-      if (!segment.elementAt(0).notes) {
-        msgWarning.text = "Empty treble staff in measure " + measure + ".";
-        msgWarning.visible = true;
-      }
+      var voices = assignVoices(segment);
       return voices;
     }
   }
 
   function getChords(cursor, processAll, endTick) {
     var index = 0;
-    var measure = 1;
     var chords = new Array();
     chords[index] = new Object;
-
-    while (cursor.next()) {
+    do {
       var segment = cursor.segment;
       if (!processAll && segment.tick >= endTick) break;
       if (segment.tick > chords[index].tick) {
@@ -134,9 +145,8 @@ MuseScore {
       }
 
       chords[index].tick = segment.tick;
-      chords[index].measure = measure;
 
-      var voices = getPitches(segment, measure);
+      var voices = getPitches(segment);
       if (voices) {
         chords[index].voices = [];
         chords[index].pitches = [];
@@ -146,7 +156,7 @@ MuseScore {
           chords[index].pitches[i] = voices[i].pitch;
           chords[index].tpc[i] = voices[i].tpc1;
         }
-        var harmony = getRomanNumeral(segment, measure);
+        var harmony = getRomanNumeral(segment);
         if (harmony) {
           var rawRomanNumeral = harmony.text;
           if ("Cad64" === rawRomanNumeral || "cad64" === rawRomanNumeral) {
@@ -155,7 +165,7 @@ MuseScore {
           }
           var figBass = getFiguredBass(rawRomanNumeral);
           var leftRomanNumeralClean = getRoman(rawRomanNumeral);
-          var tonicTPC = getTonicTPC(rawRomanNumeral, measure) + cursor.keySignature + keyMode;
+          var tonicTPC = getTonicTPC(rawRomanNumeral) + cursor.keySignature + keyMode;
           var quality = getQuality(leftRomanNumeralClean);
           var inversion = getInversion(rawRomanNumeral);
           chords[index].roman = leftRomanNumeralClean;
@@ -171,18 +181,14 @@ MuseScore {
             addSeventhNinth(chords[index], quality, figBass);
             secondaryAdjustments(chords[index].romanPitches, tonicTPC);
             chords[index].inversion = inversion;
-          }
-          else {
-            var msg = "Unrecognized\nroman numeral\n\""+leftRomanNumeralClean+"\".";
+          } else {
+            var msg = "Unrecognized\nroman numeral\n\"" + leftRomanNumeralClean + "\".";
             markText(chords[index], msg, colorOrchestrationError);
           }
           //console.log("pitches:", chords[index].tpc, "romanPitches:", chords[index].romanPitches);
         }
       }
-
-      if (segment.elementAt(0) && segment.elementAt(0).type == Element.BAR_LINE) measure++;
-      //segment = segment.next;
-    }
+    } while (cursor.next());
     return chords;
   }
 
@@ -194,13 +200,13 @@ MuseScore {
     return rn.split('/')[0].replace(/[^2345679]/g, '');
   }
 
-  function getTonicTPC(rn, measure) {
+  function getTonicTPC(rn) {
     var tonic = rn.replace(/[2345679]/g, '').split('/')[1];
     if (tonic) {
       var tonicChord = chordDefinitions[tonic];
       if (tonicChord[0]) return tonicChord[0];
       else {
-        msgWarning.text = "There's something wrong with the secondary chord in measure " + measure;
+        msgWarning.text = "There's something wrong with the secondary chord "+rn;
         msgWarning.visible = true;
         Qt.quit();
       }
@@ -295,7 +301,7 @@ MuseScore {
   function checkVoiceRanges(chords) {
     for (var i = 0; i < chords.length; i++) {
       if (chords[i].pitches) {
-        for (var v = 0; v < chords[i].pitches.length; v++) {
+        for (var v = 0; v < 4; v++) {
           if (chords[i].pitches) {
             if (!isWithin(chords[i].pitches[v], voiceRanges[v][0], voiceRanges[v][1])) {
               // voice is out of range - color note and add error message
@@ -321,6 +327,19 @@ MuseScore {
             markText(chords[i], msg, colorOrchestrationError);
           }
         }
+      }
+    }
+  }
+
+  function checkNumVoices(chords) {
+    for (var i = 0; i < chords.length; i++) {
+      if (chords[i].pitches.length > 4) {
+        var msg = "Extra note(s).";
+        markText(chords[i], msg, colorOrchestrationError);
+      }
+      else if (chords[i].pitches.length < 4) {
+        var msg = "Missing part.";
+        markText(chords[i], msg, colorOrchestrationError);
       }
     }
   }
@@ -684,6 +703,7 @@ MuseScore {
     console.log("keyMode:", keyMode);
     var chords = getChords(cursor, processAll, endTick);
 
+    checkNumVoices(chords);
     checkVoiceSpacing(chords);
     checkVoiceCrossing(chords);
     checkVoiceRanges(chords);
