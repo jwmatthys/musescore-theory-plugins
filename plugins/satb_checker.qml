@@ -5,7 +5,7 @@ import MuseScore 3.0
 MuseScore {
   menuPath: "Plugins.Proof Reading.SATB Checker"
   description: "Check 4-part writing for errors.\nIf roman numerals are present, will check for correct pitches.\nRoman numerals may also include applied (secondary) chords, Neapolitan, and augmented sixth chords.";
-  version: "0.33"
+  version: "0.34"
 
   property
   var colorOrchestrationError: "#AF6E4D"; // Range / Crossing / Spacing - brown
@@ -206,7 +206,7 @@ MuseScore {
       var tonicChord = chordDefinitions[tonic];
       if (tonicChord[0]) return tonicChord[0];
       else {
-        msgWarning.text = "There's something wrong with the secondary chord "+rn;
+        msgWarning.text = "There's something wrong with the secondary chord " + rn;
         msgWarning.visible = true;
         Qt.quit();
       }
@@ -336,8 +336,7 @@ MuseScore {
       if (chords[i].pitches.length > 4) {
         var msg = "Extra note(s).";
         markText(chords[i], msg, colorOrchestrationError);
-      }
-      else if (chords[i].pitches.length < 4) {
+      } else if (chords[i].pitches.length < 4) {
         var msg = "Missing part.";
         markText(chords[i], msg, colorOrchestrationError);
       }
