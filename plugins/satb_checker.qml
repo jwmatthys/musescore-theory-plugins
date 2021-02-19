@@ -577,15 +577,15 @@ MuseScore {
           ("V" === chords[i].roman || "viio" === chords[i].roman || "vii0" === chords[i].roman)) {
           // cadential motion confirmed!
           var v = 3; // check soprano first
-          if ((chords[i].tpc[v] == key + 5) && chords[i + 1].tpc[v] != key) {
+          if ((chords[i].tpc[v] == chords[i].key + 5) && chords[i + 1].tpc[v] != chords[i].key) {
             // uh oh! LT was in soprano and didn't resolve up to tonic
             chords[i].voices[3].color = colorTendencyToneError;
             chords[i + 1].voices[3].color = colorTendencyToneError;
             var msg = "Leading tone in soprano\nmust resolve up to\ntonic on V-I or viio-I";
             markText(chords[i + 1], msg, colorTendencyToneError);
           }
-          for (v = 0; v < 3; v++) {
-            if ((chords[i].tpc[v] == key + 5) && chords[i + 1].tpc[v] != key) {
+          for (v = 1; v < 3; v++) {
+            if ((chords[i].tpc[v] == chords[i].key + 5) && chords[i + 1].tpc[v] != chords[i].key) {
               // If LT doesn't resolve up in other voices it's just info
               chords[i].voices[v].color = colorTendencyToneWarning;
               chords[i + 1].voices[v].color = colorTendencyToneWarning;
