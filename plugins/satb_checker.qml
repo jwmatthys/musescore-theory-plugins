@@ -333,7 +333,8 @@ MuseScore {
 
   function checkNumVoices(chords) {
     for (var i = 0; i < chords.length; i++) {
-      if (chords[i].pitches.length > 4) {
+      if (chords[i].pitches) {
+       if (chords[i].pitches.length > 4) {
         var msg = "Extra note(s).";
         markText(chords[i], msg, colorOrchestrationError);
       } else if (chords[i].pitches.length < 4) {
@@ -341,6 +342,7 @@ MuseScore {
         markText(chords[i], msg, colorOrchestrationError);
       }
     }
+  }
   }
 
   function checkVoiceSpacing(chords) {
