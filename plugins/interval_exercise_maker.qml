@@ -324,12 +324,12 @@ MuseScore {
           }
           chord.add(testnote1); //add notes to the chord
           chord.add(testnote2); //add notes to the chord
-          chord.notes[1].tpc = tpc0;
-          chord.notes[2].tpc = tpc1;
-          chord.notes[1].tpc1 = tpc0;
-          chord.notes[2].tpc1 = tpc1;
-          chord.notes[1].tpc2 = tpc0;
-          chord.notes[2].tpc2 = tpc1;
+          //chord.notes[1].tpc = tpc0;
+          //chord.notes[2].tpc = tpc1;
+          //chord.notes[1].tpc1 = tpc0;
+          //chord.notes[2].tpc1 = tpc1;
+          //chord.notes[1].tpc2 = tpc0;
+          //chord.notes[2].tpc2 = tpc1;
           var notes = chord.notes;
           chord.remove(notes[0]);
         }
