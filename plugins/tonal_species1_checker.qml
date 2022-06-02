@@ -513,7 +513,7 @@ MuseScore {
             for (var v = 0; v < 2; v++) {
                 if (v != cantusFirmus && dyads[i].tpc && dyads[i].tpc[v]) {
                     var next = i + 1;
-                    if (dyads[next] && dyads[next].tpc && dyads[next].tpc[v]) {
+                    try {
                         var leapDirection = Math.sign(dyads[next].pitch[v] - dyads[i].pitch[v]);
                         var leapSize = Math.abs(dyads[next].pitch[v] - dyads[i].pitch[v]);
                         if (leapSize > 7) // look for step back
@@ -527,10 +527,12 @@ MuseScore {
                                     dyads[next].voices[v].color = colorVoiceLeading;
                                     dyads[i].voices[v].color = colorVoiceLeading;
                                     var msg = "Melody should\nstep back after\nlarge leap.";
-                                    markText(v, dyads[i], msg, colorVoiceLeading);
+                                    markText(v, dyads[next], msg, colorVoiceLeading);
                                 }
                             }
                         }
+                    } catch (err) {
+                        console.log(err);
                     }
                 }
             }
@@ -625,11 +627,11 @@ MuseScore {
         var ratio = perfectCount * 1.0 / dyads.length;
         console.log("Percentage of perfect intervals: ", ratio * 100, "%");
         if (ratio >= 0.8) {
-            var msg = "Too many perfect\nintervals.";
+            var msg = "Too many perfect\nintervals.\nThere are " + perfectCount + ",\nwhich is " + Math.round(ratio * 100) + "%.";
             markText(0, dyads[0], msg, colorInfo);
         }
         if (ratio > 0.55 && ratio < 0.8) {
-            var msg = "Maybe too many\nperfect intervals.";
+            var msg = "Maybe too many\nperfect intervals.\nThere are " + perfectCount + ",\nwhich is " + Math.round(ratio * 100) + "%.";
             markText(0, dyads[0], msg, colorInfo);
         }
     }
@@ -639,16 +641,20 @@ MuseScore {
         var leapCount = 0;
         for (var i = 0; i < dyads.length - 1; i++) {
             for (var v = 0; v < 2; v++) {
-                if (v != cantusFirmus && dyads[i].pitch[v] && dyads[i + 1].pitch[v]) {
-                    if (dyads[i].pitch[v] != dyads[i + 1].pitch[v]) noteCount++;
-                    if (Math.abs(dyads[i].pitch[v] - dyads[i + 1].pitch[v]) > 2) leapCount++;
+                if (v != cantusFirmus) {
+                    try {
+                        if (dyads[i].pitch[v] != dyads[i + 1].pitch[v]) noteCount++;
+                        if (Math.abs(dyads[i].pitch[v] - dyads[i + 1].pitch[v]) > 2) leapCount++;
+                    } catch (err) {
+                        console.log(err);
+                    }
                 }
             }
         }
         var ratio = leapCount * 1.0 / noteCount;
         console.log("Percentage of leaps: ", ratio * 100, "%");
         if (ratio > 0.5) {
-            var msg = "Too many leaps.";
+            var msg = "Melody may be\ntoo disjunct.\nThere are " + leapCount + " leaps,\nwhich is " + Math.round(ratio * 100) + "%.";
             markText(0, dyads[0], msg, colorInfo);
         }
     }
@@ -792,16 +798,14 @@ MuseScore {
         checkHorizontalIntervals(dyads);
         //leapToDissonance(dyads);
         //leapFromDissonance(dyads);
+        //downbeatParallels(dyads);
         consecutiveLeaps(dyads);
         outlinedTritone(dyads);
 
-        /*
 
         ratioOfPerfect(dyads);
         ratioOfLeaps(dyads);
-
-        downbeatParallels(dyads);
-
+        /*
 
         if (noErrorsFound)
         {
