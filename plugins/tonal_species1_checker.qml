@@ -578,7 +578,8 @@ MuseScore {
     function outlinedTritone(dyads) {
         for (var i = 0; i < dyads.length - 3; i++) {
             for (var v = 0; v < 2; v++) {
-                if (v != cantusFirmus && dyads[i].pitch[v] && dyads[i + 1].pitch[v] && dyads[i + 2].pitch[v] && dyads[i + 3].pitch[v]) {
+                if (v != cantusFirmus && dyads[i].pitch && dyads[i + 1].pitch && dyads[i + 2].pitch && dyads[i + 3].pitch && 
+                dyads[i].pitch[v] && dyads[i + 1].pitch[v] && dyads[i + 2].pitch[v] && dyads[i + 3].pitch[v]) {
                     var outlinedInterval = dyads[i + 2].tpc[v] - dyads[i].tpc[v];
                     var direction0to1 = Math.sign(dyads[i + 1].pitch[v] - dyads[i].pitch[v]);
                     var direction1to2 = Math.sign(dyads[i + 2].pitch[v] - dyads[i + 1].pitch[v]);
@@ -784,11 +785,11 @@ MuseScore {
         stepBack(dyads);
         checkHorizontalIntervals(dyads);
 
-        leapToDissonance(dyads);
-        leapFromDissonance(dyads);
+        //leapToDissonance(dyads);
+        //leapFromDissonance(dyads);
         consecutiveLeaps(dyads);
-        /*
         outlinedTritone(dyads);
+        /*
 
         ratioOfPerfect(dyads);
         ratioOfLeaps(dyads);
