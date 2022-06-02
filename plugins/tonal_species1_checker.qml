@@ -94,33 +94,27 @@ MuseScore {
     }
 
     function assignVoices(segment) {
-        // first, check for keyboard style
         var voices = [];
         var voiceIndex = 0;
-        for (var layer = 0; layer <8; layer++) {
+        for (var layer = 0; layer < 8; layer++) {
             if (segment.elementAt(layer)) {
                 var thisLayerNotes = segment.elementAt(layer).notes;
                 if (thisLayerNotes) {
                     for (var v = 0; v < thisLayerNotes.length; v++) {
                         voices[voiceIndex++] = thisLayerNotes[v];
                     }
+                } else {
+                    console.log("error in assignVoices");
                 }
+
             }
-        }
-        if (voiceIndex > 2) {
-            msgWarning.text = "This plugin only works on two voice counterpoint.";
-            msgWarning.visible = true;
-            Qt.quit();
         }
         return voices;
     }
 
     function getCurrentDyad(segment) {
         // step 1: read pitches
-        if (segment && segment.elementAt(4) &&
-            (segment.elementAt(4).type == Element.CHORD ||
-                segment.elementAt(4).type == Element.REST)) {
-
+        if (isValidDyad(segment)) {
             var voices = assignVoices(segment);
             return voices;
         }
@@ -143,14 +137,16 @@ MuseScore {
             dyads[index].tick = segment.tick;
 
             var voices = getCurrentDyad(segment);
-            if (!voices) {
-                console.log("index " + index + ": voice not found!");
-            }
             if (voices) {
                 dyads[index].voices = [];
                 dyads[index].pitch = [];
                 dyads[index].tpc = [];
                 dyads[index].voices = voices; // use this to color error noteheads
+                if (voices.length > 2) {
+                    msgWarning.text = "This plugin only works on two voice counterpoint.";
+                    msgWarning.visible = true;
+                    Qt.quit();
+                }
                 for (var i = 0; i < voices.length; i++) {
                     dyads[index].pitch[i] = voices[i].pitch;
                     dyads[index].tpc[i] = voices[i].tpc1;
@@ -196,32 +192,39 @@ MuseScore {
         var last = {};
         for (var i = 0; i < dyads.length; i++) {
             for (var v = 0; v < 2; v++) {
-                /*
-                                    if (!dyads[i].voices[v]) {
-                                    // Should this warning be offloaded to a separate function?
-                                    markText(0, dyads[i], "Only vertical\ndyads are\nallowed in\nSpecies I.", colorInfo);
-                                }*/
-                if (dyads[i].voices[v]) {
+                if (dyads[i].voices && dyads[i].voices[v]) {
                     dyads[i].tpc[v] = dyads[i].voices[v].tpc1;
                     dyads[i].pitch[v] = dyads[i].voices[v].pitch;
                 }
             }
+
+            //            if (!dyads[i].voices) speciesIVerticalityWarning(dyads, i, 0);
+
             // get motion by comparing to previous notes
-            if (last[0] && last[1]) {
+            if (last[0] && last[1] && dyads[i].pitch && dyads[i].pitch) {
                 // note: maybe this could fail if notes are enharmonic -- but how often does that
                 // pop up in species? And what even is the motion for B - Cb? I would still call
                 // that oblique
                 dyads[i].motion = getMotion(last[0].pitch, last[1].pitch, dyads[i].pitch[0], dyads[i].pitch[1]);
             }
-            if (dyads[i].tpc[0] && dyads[i].tpc[1]) {
+
+            if (dyads[i].tpc && dyads[i].tpc[0] && dyads[i].tpc[1]) {
                 dyads[i].completeDyad = true;
                 dyads[i].interval = dyads[i].tpc[0] - dyads[i].tpc[1];
                 dyads[i].perfect = (dyads[i].interval === 0 || dyads[i].interval === 1);
             }
-            last[0] = dyads[i].voices[0];
-            last[1] = dyads[i].voices[1];
+            try {
+                last[0] = dyads[i].voices[0];
+                last[1] = dyads[i].voices[1];
+            } catch (err) {
+                console.log(err);
+            }
         }
         return dyads;
+    }
+
+    function speciesIVerticalityWarning(dyads, i, v) {
+        markText(0, dyads[i], "Only vertical\ndyads are\nallowed in\nSpecies I.", colorInfo);
     }
 
     function getRomanNumeral(segment, measure) {
@@ -423,7 +426,7 @@ MuseScore {
                     markText(0, dyads[i - 1], msg, colorApproachPerfect);
                 }
             } else {
-                if ("similar" === dyads[i].motion) {
+                if ("similar" === dyads[i].motion && dyads[i].perfect) {
                     msg = "Perfect interval\napproached in\nsimilar motion.";
                     dyads[i - 1].voices[0].color = colorApproachPerfect;
                     dyads[i - 1].voices[1].color = colorApproachPerfect;
@@ -578,8 +581,8 @@ MuseScore {
     function outlinedTritone(dyads) {
         for (var i = 0; i < dyads.length - 3; i++) {
             for (var v = 0; v < 2; v++) {
-                if (v != cantusFirmus && dyads[i].pitch && dyads[i + 1].pitch && dyads[i + 2].pitch && dyads[i + 3].pitch && 
-                dyads[i].pitch[v] && dyads[i + 1].pitch[v] && dyads[i + 2].pitch[v] && dyads[i + 3].pitch[v]) {
+                if (v != cantusFirmus && dyads[i].pitch && dyads[i + 1].pitch && dyads[i + 2].pitch && dyads[i + 3].pitch &&
+                    dyads[i].pitch[v] && dyads[i + 1].pitch[v] && dyads[i + 2].pitch[v] && dyads[i + 3].pitch[v]) {
                     var outlinedInterval = dyads[i + 2].tpc[v] - dyads[i].tpc[v];
                     var direction0to1 = Math.sign(dyads[i + 1].pitch[v] - dyads[i].pitch[v]);
                     var direction1to2 = Math.sign(dyads[i + 2].pitch[v] - dyads[i + 1].pitch[v]);
@@ -702,9 +705,7 @@ MuseScore {
 
     function checkForWrongPitches(dyads) {
         for (var i = 0; i < dyads.length; i++) {
-            console.log("hello!", i);
             if (dyads[i].chordTones) {
-                console.log(dyads[i].chordTones);
                 var correctPitches = dyads[i].chordTones;
                 for (var v = 0; v < 2; v++) {
                     var testPitch = dyads[i].tpc[v];
@@ -780,21 +781,25 @@ MuseScore {
         keyMode = majorOrMinor(segment, processAll, endTick);
         var dyads = getDyads(cursor, processAll, endTick);
 
+        processPitches(dyads);
+
         checkForWrongPitches(dyads);
         checkForVoiceCrossing(dyads);
+
+        checkApproachToPerfect(dyads);
+
         stepBack(dyads);
         checkHorizontalIntervals(dyads);
-
         //leapToDissonance(dyads);
         //leapFromDissonance(dyads);
         consecutiveLeaps(dyads);
         outlinedTritone(dyads);
+
         /*
 
         ratioOfPerfect(dyads);
         ratioOfLeaps(dyads);
 
-        checkApproachToPerfect(dyads);
         downbeatParallels(dyads);
 
 
