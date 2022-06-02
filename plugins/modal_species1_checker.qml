@@ -16,25 +16,25 @@ MuseScore {
   var cfFound: false;
 
   property
-  var colorBeginningEnd: "#9132E3";
+  var colorBeginningEnd: accessible_amber;
 
   property
-  var colorVertical: "#D03F4A";
+  var colorVertical: accessible_red;
 
   property
-  var colorApproachPerfect: "#FF00B4";
+  var colorApproachPerfect: accessible_red;
 
   property
-  var colorVoiceLeading: "#009F6B";
+  var colorVoiceLeading: accessible_amber;
 
   property
-  var colorLeaps: "#183A7A";
+  var colorLeaps: accessible_amber;
 
   property
-  var colorConsecutive: "#FFA365";
+  var colorConsecutive: accessible_amber;
 
   property
-  var colorInfo: "#6C7697";
+  var colorInfo: accessible_blue;
 
   property
   var key: 14;
@@ -58,6 +58,7 @@ MuseScore {
     noErrorsFound = false;
     var cursor = curScore.newCursor();
     cursor.rewindToTick(dyad.tick);
+    cursor.track = v * 4;
     cursor.add(myText);
   }
 
@@ -447,6 +448,7 @@ MuseScore {
       }
       return 0;
     }
+
     */
 
   function checkForDissonantDownbeats(dyads) {
@@ -456,7 +458,7 @@ MuseScore {
           var errorNotes = [];
           dyads[i].voices[0].color = colorVertical;
           dyads[i].voices[1].color = colorVertical;
-          var msg = "Harmonic " + intervalNames[dyads[i].interval + 11] + "\nis not allowed\non downbeat.";
+          var msg = "Vertical " + intervalNames[dyads[i].interval + 11] + "\nis not allowed\nin Species I.";
           markText(0, dyads[i], msg, colorVertical);
         }
       }
@@ -756,34 +758,36 @@ MuseScore {
     }
   }
 
-  function downbeatParallels(dyads) {
-    var msg = "xxx";
-    for (var i = 1; i < dyads.length - 1; i++) {
-      if (dyads[i].downbeat && dyads[i].perfect) {
-        var next;
-        for (next = i + 1; next < dyads.length; next++) {
-          if (dyads[next].downbeat) break;
-        }
-        if (dyads[i].interval === dyads[next].interval) {
-          var motion = getMotion(dyads[i].pitch[0], dyads[i].pitch[1], dyads[next].pitch[0], dyads[next].pitch[1]);
-          switch (motion) {
-            case "similar":
-              msg = "Downbeat\nparallel " + intervalNames[dyads[i].interval + 11] + ".";
-              break;
-            case "contrary":
-              msg = "Downbeat\ncontrary " + intervalNames[dyads[i].interval + 11] + ".";
-              break;
+  /*
+    function downbeatParallels(dyads) {
+      var msg = "xxx";
+      for (var i = 1; i < dyads.length - 1; i++) {
+        if (dyads[i].downbeat && dyads[i].perfect) {
+          var next;
+          for (next = i + 1; next < dyads.length; next++) {
+            if (dyads[next].downbeat) break;
           }
-          dyads[next].voices[0].color = colorVertical;
-          dyads[next].voices[1].color = colorVertical;
-          dyads[i].voices[0].color = colorVertical;
-          dyads[i].voices[1].color = colorVertical;
-          markText(0, dyads[i], msg, colorVertical);
-          break;
+          if (dyads[i].interval === dyads[next].interval) {
+            var motion = getMotion(dyads[i].pitch[0], dyads[i].pitch[1], dyads[next].pitch[0], dyads[next].pitch[1]);
+            switch (motion) {
+              case "similar":
+                msg = "Downbeat\nparallel " + intervalNames[dyads[i].interval + 11] + ".";
+                break;
+              case "contrary":
+                msg = "Downbeat\ncontrary " + intervalNames[dyads[i].interval + 11] + ".";
+                break;
+            }
+            dyads[next].voices[0].color = colorVertical;
+            dyads[next].voices[1].color = colorVertical;
+            dyads[i].voices[0].color = colorVertical;
+            dyads[i].voices[1].color = colorVertical;
+            markText(0, dyads[i], msg, colorVertical);
+            break;
+          }
         }
       }
     }
-  }
+    */
 
   function typeOfNCT(dyads) {
     for (var v = 0; v < 2; v++) {
@@ -872,8 +876,8 @@ MuseScore {
     checkHorizontalIntervals(dyads);
     stepBack(dyads);
 
-    leapToDissonance(dyads);
-    leapFromDissonance(dyads);
+    //leapToDissonance(dyads);
+    //leapFromDissonance(dyads);
     consecutiveLeaps(dyads);
     //outlinedTritone(dyads);
 
@@ -885,7 +889,7 @@ MuseScore {
 
     checkForDissonantDownbeats(dyads);
     checkApproachToPerfect(dyads);
-    downbeatParallels(dyads);
+    //downbeatParallels(dyads);
 
     if (noErrorsFound) {
       msgWarning.text = "Great job! No errors found.";
@@ -980,4 +984,16 @@ MuseScore {
     "aug6",
     "aug3"
   ];
+
+  property
+  var accessible_red: "#B91C1C";
+
+  property
+  var accessible_green: "#15803D";
+
+  property
+  var accessible_amber: "#B45309";
+
+  property
+  var accessible_blue: "#1D4ED8";
 }

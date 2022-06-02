@@ -8,25 +8,25 @@ MuseScore {
   version: "0.34"
 
   property
-  var colorOrchestrationError: "#AF6E4D"; // Range / Crossing / Spacing - brown
+  var colorOrchestrationError: accessible_amber; // Range / Crossing / Spacing - brown
   property
-  var colorPitchError: "#CE2029"; // Wrong pitch & Inversion error
+  var colorPitchError: accessible_red; // Wrong pitch & Inversion error
   property
-  var colorInversionError: "#FEDF00";
+  var colorInversionError: accessible_red;
   property
-  var colorDoubledLTError: "#600887";
+  var colorDoubledLTError: accessible_amber;
   property
-  var colorMissingTones: "#009F6B";
+  var colorMissingTones: accessible_red;
   property
-  var colorParallelPerfect: "#FF4F00";
+  var colorParallelPerfect: accessible_red;
   property
-  var colorContraryPerfect: "#C74375";
+  var colorContraryPerfect: accessible_amber;
   property
-  var colorVoiceLeadingWarning: "#DA9100";
+  var colorVoiceLeadingWarning: accessible_amber;
   property
-  var colorTendencyToneError: "#0047AB";
+  var colorTendencyToneError: accessible_amber;
   property
-  var colorTendencyToneWarning: "#8CC5CE";
+  var colorTendencyToneWarning: accessible_amber;
 
   property
   var voiceRanges: [
@@ -75,13 +75,13 @@ MuseScore {
     visible: false;
   }
 
-  function markText(chord, msg, color) {
+  function markText(dyad, msg, color) {
     var myText = newElement(Element.STAFF_TEXT);
     myText.text = msg;
     myText.color = color;
     noErrorsFound = false;
     var cursor = curScore.newCursor();
-    cursor.rewindToTick(chord.tick);
+    cursor.rewindToTick(dyad.tick);
     cursor.add(myText);
   }
 
@@ -334,15 +334,15 @@ MuseScore {
   function checkNumVoices(chords) {
     for (var i = 0; i < chords.length; i++) {
       if (chords[i].pitches) {
-       if (chords[i].pitches.length > 4) {
-        var msg = "Extra note(s).";
-        markText(chords[i], msg, colorOrchestrationError);
-      } else if (chords[i].pitches.length < 4) {
-        var msg = "Missing part.";
-        markText(chords[i], msg, colorOrchestrationError);
+        if (chords[i].pitches.length > 4) {
+          var msg = "Extra note(s).";
+          markText(chords[i], msg, colorOrchestrationError);
+        } else if (chords[i].pitches.length < 4) {
+          var msg = "Missing part.";
+          markText(chords[i], msg, colorOrchestrationError);
+        }
       }
     }
-  }
   }
 
   function checkVoiceSpacing(chords) {
@@ -787,4 +787,15 @@ MuseScore {
   property
   var bassStaff: 0;
 
+  property
+  var accessible_red: "#B91C1C";
+
+  property
+  var accessible_green: "#15803D";
+
+  property
+  var accessible_amber: "#B45309";
+
+  property
+  var accessible_blue: "#1D4ED8";
 }
