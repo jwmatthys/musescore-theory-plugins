@@ -198,8 +198,6 @@ MuseScore {
                 }
             }
 
-            //            if (!dyads[i].voices) speciesIVerticalityWarning(dyads, i, 0);
-
             // get motion by comparing to previous notes
             if (last[0] && last[1] && dyads[i].pitch && dyads[i].pitch) {
                 // note: maybe this could fail if notes are enharmonic -- but how often does that
@@ -221,10 +219,6 @@ MuseScore {
             }
         }
         return dyads;
-    }
-
-    function speciesIVerticalityWarning(dyads, i, v) {
-        markText(0, dyads[i], "Only vertical\ndyads are\nallowed in\nSpecies I.", colorInfo);
     }
 
     function getRomanNumeral(segment, measure) {
