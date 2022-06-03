@@ -7,7 +7,7 @@ MuseScore {
     description: "Check two-part tonal species counterpoint for errors.";
     version: "0.8"
 
-    property bool labelNCTs: true; // set this to true to have your NCTs labeled
+    property bool labelNCTs: false; // set this to true to have your NCTs labeled
 
     property bool majorMode: true;
     property bool noErrorsFound: true; // yet...: )
