@@ -428,7 +428,7 @@ MuseScore {
         var msg = "xxx";
         for (var i = 0; i < dyads.length; i++) {
             try {
-                if (dyads[i].interval === dyads[i - 1].interval  && dyads[i].perfect) {
+                if (dyads[i].interval === dyads[i - 1].interval && dyads[i].perfect) {
                     if ("similar" === dyads[i].motion) {
                         msg = "Parallel " + intervalNames[dyads[i].interval + 11] + ".";
                         dyads[i - 1].voices[0].color = colorApproachPerfect;
@@ -725,9 +725,9 @@ MuseScore {
             if (dyads[i].bassNotePresent && dyads[i].perfect) {
                 var next;
                 for (next = i + 1; next <= dyads.length; next++) {
-                    if (dyads[next].bassNotePresent) break;
+                    if (dyads[next] && dyads[next].bassNotePresent) break;
                 }
-                if (dyads[i].interval === dyads[next].interval) {
+                if (dyads[next] && dyads[i].interval === dyads[next].interval) {
                     var motion = getMotion(dyads[i].pitch[0], dyads[i].pitch[1], dyads[next].pitch[0], dyads[next].pitch[1]);
                     if ("similar" === motion) {
                         msg = "Downbeat\nparallel " + intervalNames[dyads[i].interval + 11] + ".";
@@ -799,46 +799,50 @@ MuseScore {
 
     function checkforUnaccentedPassingTones(dyads) {
         for (var index = 0; index < dyads.length; index++) {
-            if (!dyads[index].bassNotePresent) {
-                var testPitch = dyads[index].pitch[0];
-                var previousPitch = dyads[index - 1].pitch[0];
-                var nextPitch = dyads[index + 1].pitch[0];
-                var testTPC = dyads[index].tpc[0]; // these are values 0-7 representing F,C,G,D,E etc.
-                var previousTPC = dyads[index - 1].tpc[0];
-                var nextTPC = dyads[index + 1].tpc[0];
-                var approach = testPitch - previousPitch;
-                var exit = nextPitch - testPitch;
-                if (Math.abs(approach) > 3) {
-                    dyads[index].nct = false;
-                    continue;
+            try {
+                if (!dyads[index].bassNotePresent) {
+                    var testPitch = dyads[index].pitch[0];
+                    var previousPitch = dyads[index - 1].pitch[0];
+                    var nextPitch = dyads[index + 1].pitch[0];
+                    var testTPC = dyads[index].tpc[0]; // these are values 0-7 representing F,C,G,D,E etc.
+                    var previousTPC = dyads[index - 1].tpc[0];
+                    var nextTPC = dyads[index + 1].tpc[0];
+                    var approach = testPitch - previousPitch;
+                    var exit = nextPitch - testPitch;
+                    if (Math.abs(approach) > 3) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (Math.abs(exit) > 3) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    var modDiff;
+                    var approachTPC = Math.abs(testTPC - previousTPC) % 7;
+                    var exitTPC = Math.abs(nextTPC - testTPC) % 7;
+                    if (approachTPC != 2 && approachTPC != 5) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (exitTPC != 2 && exitTPC != 5) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (Math.sign(approach) != Math.sign(exit)) {
+                        dyads[index - 1].voices[0].color = colorVoiceLeading;
+                        dyads[index].voices[0].color = colorVoiceLeading;
+                        dyads[index + 1].voices[0].color = colorVoiceLeading;
+                        var msg = "Neighbor tones\nare not allowed\nin Species II.";
+                        markText(0, dyads[index], msg, colorVoiceLeading);
+                    } else if (labelNCTs) {
+                        var msg = "PT";
+                        markText(0, dyads[index], msg, colorNCT);
+                    }
+                    dyads[index].nct = true;
                 }
-                if (Math.abs(exit) > 3) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                var modDiff;
-                var approachTPC = Math.abs(testTPC - previousTPC) % 7;
-                var exitTPC = Math.abs(nextTPC - testTPC) % 7;
-                if (approachTPC != 2 && approachTPC != 5) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                if (exitTPC != 2 && exitTPC != 5) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                if (Math.sign(approach) != Math.sign(exit)) {
-                    dyads[index - 1].voices[0].color = colorVoiceLeading;
-                    dyads[index].voices[0].color = colorVoiceLeading;
-                    dyads[index + 1].voices[0].color = colorVoiceLeading;
-                    var msg = "Neighbor tones\nare not allowed\nin Species II.";
-                    markText(0, dyads[index], msg, colorVoiceLeading);
-                } else if (labelNCTs) {
-                    var msg = "PT";
-                    markText(0, dyads[index], msg, colorNCT);
-                }
-                dyads[index].nct = true;
             }
+        } catch (err) {
+            console.log(err);
         }
     }
 

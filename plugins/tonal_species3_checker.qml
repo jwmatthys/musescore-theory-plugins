@@ -98,15 +98,11 @@ MuseScore {
         try {
             voices[0] = segment.elementAt(0).notes[0];
             noteCount += voices[0].length;
-        } catch (err) {
-            //console.log(err, segment.tick, "missing treble voice");
-        }
+        } catch (err) {}
         try {
             voices[1] = segment.elementAt(4).notes[0];
             noteCount += voices[1].length;
-        } catch (err) {
-            //console.log(err, segment.tick, "missing bass voice");
-        }
+        } catch (err) {}
         if (noteCount > 2) {
             msgWarning.text = "This plugin only works on two voice counterpoint.";
             msgWarning.visible = true;
@@ -714,9 +710,9 @@ MuseScore {
             if (dyads[i].bassNotePresent && dyads[i].perfect) {
                 var next;
                 for (next = i + 1; next <= dyads.length; next++) {
-                    if (dyads[next].bassNotePresent) break;
+                    if (dyads[next] && dyads[next].bassNotePresent) break;
                 }
-                if (dyads[i].interval === dyads[next].interval) {
+                if (dyads[next] && dyads[i].interval === dyads[next].interval) {
                     var motion = getMotion(dyads[i].pitch[0], dyads[i].pitch[1], dyads[next].pitch[0], dyads[next].pitch[1]);
                     if ("similar" === motion) {
                         msg = "Downbeat\nparallel " + intervalNames[dyads[i].interval + 11] + ".";
@@ -788,109 +784,116 @@ MuseScore {
 
     function checkforUnaccentedNCTs(dyads) {
         for (var index = 0; index < dyads.length; index++) {
-            if (!dyads[index].bassNotePresent && !dyads[index].nct) {
+            try {
+                if (!dyads[index].bassNotePresent && !dyads[index].nct) {
 
-                var testPitch = dyads[index].pitch[0];
-                var previousPitch = dyads[index - 1].pitch[0];
-                var nextPitch = dyads[index + 1].pitch[0];
-                var testTPC = dyads[index].tpc[0]; // these are values 0-7 representing F,C,G,D,E etc.
-                var previousTPC = dyads[index - 1].tpc[0];
-                var nextTPC = dyads[index + 1].tpc[0];
-                var approach = testPitch - previousPitch;
-                var exit = nextPitch - testPitch;
-                if (Math.abs(approach) > 3) {
-                    dyads[index].nct = false;
-                    continue;
+                    var testPitch = dyads[index].pitch[0];
+                    var previousPitch = dyads[index - 1].pitch[0];
+                    var nextPitch = dyads[index + 1].pitch[0];
+                    var testTPC = dyads[index].tpc[0]; // these are values 0-7 representing F,C,G,D,E etc.
+                    var previousTPC = dyads[index - 1].tpc[0];
+                    var nextTPC = dyads[index + 1].tpc[0];
+                    var approach = testPitch - previousPitch;
+                    var exit = nextPitch - testPitch;
+                    if (Math.abs(approach) > 3) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (Math.abs(exit) > 3) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    var modDiff;
+                    var approachTPC = Math.abs(testTPC - previousTPC) % 7;
+                    var exitTPC = Math.abs(nextTPC - testTPC) % 7;
+                    if (approachTPC != 2 && approachTPC != 5) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (exitTPC != 2 && exitTPC != 5) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    dyads[index].nct = true;
+                    if (labelNCTs) {
+                        var msg = "";
+                        if (Math.sign(approach) == Math.sign(exit)) msg = "PT";
+                        else msg = "NT";
+                        markText(0, dyads[index], msg, colorNCT);
+                    }
                 }
-                if (Math.abs(exit) > 3) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                var modDiff;
-                var approachTPC = Math.abs(testTPC - previousTPC) % 7;
-                var exitTPC = Math.abs(nextTPC - testTPC) % 7;
-                if (approachTPC != 2 && approachTPC != 5) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                if (exitTPC != 2 && exitTPC != 5) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                dyads[index].nct = true;
-                if (labelNCTs) {
-                    var msg = "";
-                    if (Math.sign(approach) == Math.sign(exit)) msg = "PT";
-                    else msg = "NT";
-                    markText(0, dyads[index], msg, colorNCT);
-                }
+            } catch (err) {
+                console.log(err);
             }
         }
     }
 
     function checkForDoubleNeighbor(dyads) {
         for (var index = 0; index < dyads.length; index++) {
-            if (!dyads[index].bassNotePresent && !dyads[index + 1].bassNotePresent) {
-                var testPitch = [];
-                var testTPC = [];
-                for (var t = 0; t < 4; t++) {
-                    testPitch[t] = dyads[index - 1 + t].pitch[0];
-                    testTPC[t] = dyads[index - 1 + t].tpc[0];
-                }
-                var melIntervals = [];
-                var directions = [];
-                var TPCdiffs = [];
-                if (testPitch[0] != testPitch[3]) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                for (var d = 0; d < 3; d++) {
-                    melIntervals[d] = testPitch[d + 1] - testPitch[d];
-                    directions[d] = Math.sign(melIntervals[d]);
-                    TPCdiffs[d] = Math.abs(testTPC[d + 1] - testTPC[d]) % 7;
-                }
-                if (Math.abs(melIntervals[0]) > 3) {
-                    dyads[index].nct = false;
-                    continue;
-                }
+            try {
+                if (!dyads[index].bassNotePresent && !dyads[index + 1].bassNotePresent) {
+                    var testPitch = [];
+                    var testTPC = [];
+                    for (var t = 0; t < 4; t++) {
+                        testPitch[t] = dyads[index - 1 + t].pitch[0];
+                        testTPC[t] = dyads[index - 1 + t].tpc[0];
+                    }
+                    var melIntervals = [];
+                    var directions = [];
+                    var TPCdiffs = [];
+                    if (testPitch[0] != testPitch[3]) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    for (var d = 0; d < 3; d++) {
+                        melIntervals[d] = testPitch[d + 1] - testPitch[d];
+                        directions[d] = Math.sign(melIntervals[d]);
+                        TPCdiffs[d] = Math.abs(testTPC[d + 1] - testTPC[d]) % 7;
+                    }
+                    if (Math.abs(melIntervals[0]) > 3) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
 
-                if (Math.abs(melIntervals[2]) > 3) {
-                    dyads[index].nct = false;
-                    continue;
-                }
+                    if (Math.abs(melIntervals[2]) > 3) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
 
-                if (directions[0] != directions[2]) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                if (directions[0] == directions[1]) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                if (TPCdiffs[0] != 2 && TPCdiffs[0] != 5) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                if (TPCdiffs[1] != 3 && TPCdiffs[1] != 3) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                if (TPCdiffs[2] != 2 && TPCdiffs[2] != 5) {
-                    dyads[index].nct = false;
-                    continue;
-                }
-                if (labelNCTs)
-                {
-                    var msg = "DN";
-                    markText(0, dyads[index], msg, colorNCT);
+                    if (directions[0] != directions[2]) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (directions[0] == directions[1]) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (TPCdiffs[0] != 2 && TPCdiffs[0] != 5) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (TPCdiffs[1] != 3 && TPCdiffs[1] != 3) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (TPCdiffs[2] != 2 && TPCdiffs[2] != 5) {
+                        dyads[index].nct = false;
+                        continue;
+                    }
+                    if (labelNCTs) {
+                        var msg = "DN";
+                        markText(0, dyads[index], msg, colorNCT);
 
+                    }
+                    dyads[index].nct = true;
+                    dyads[index].doubleNeighbor = true;
+                    dyads[index + 1].nct = true;
+                    dyads[index + 1].doubleNeighbor = true;
+                    index++;
+                    continue;
                 }
-                dyads[index].nct = true;
-                dyads[index].doubleNeighbor = true;
-                dyads[index + 1].nct = true;
-                dyads[index + 1].doubleNeighbor = true;
-                index++;
-                continue;
+            } catch (err) {
+                console.log(err);
             }
         }
     }
