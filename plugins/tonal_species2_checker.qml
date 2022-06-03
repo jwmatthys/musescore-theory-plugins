@@ -428,7 +428,7 @@ MuseScore {
         var msg = "xxx";
         for (var i = 0; i < dyads.length; i++) {
             try {
-                if (dyads[i].interval === dyads[i - 1].interval) {
+                if (dyads[i].interval === dyads[i - 1].interval  && dyads[i].perfect) {
                     if ("similar" === dyads[i].motion) {
                         msg = "Parallel " + intervalNames[dyads[i].interval + 11] + ".";
                         dyads[i - 1].voices[0].color = colorApproachPerfect;
