@@ -136,6 +136,7 @@ MuseScore {
             dyads[index].interval = null;
             dyads[index].motion = null;
             dyads[index].perfect = null;
+            dyads[index].inversion = null;
             dyads[index].bassNotePresent = false;
             dyads[index].roman = "";
             dyads[index].key = 0;
@@ -489,7 +490,7 @@ MuseScore {
     function leapFromDissonance(dyads) {
         for (var i = 0; i < dyads.length - 1; i++) {
             for (var v = 0; v < 2; v++) {
-                if (v != cantusFirmus && !dyads[i].doubleNeighbor) {
+                if (v != cantusFirmus && !dyads[i].doubleNeighbor && dyads[i].roman) {
                     try {
                         var chordTones = dyads[i].chordTones;
                         if (chordTones.indexOf(dyads[i].tpc[v]) < 0) {
@@ -730,8 +731,9 @@ MuseScore {
     }
 
     function checkForWrongPitches(dyads, checkDownbeatsOnly) {
+            console.log(dyads[0].roman, dyads[1].roman);
         for (var i = 0; i < dyads.length; i++) {
-            if (dyads[i].chordTones && (dyads[i].bassNotePresent == checkDownbeatsOnly) && !dyads[i].nct) {
+            if (dyads[i].roman && (dyads[i].bassNotePresent == checkDownbeatsOnly) && !dyads[i].nct) {
                 var correctPitches = dyads[i].chordTones;
                 for (var v = 0; v < 2; v++) {
                     var testPitch = dyads[i].tpc[v];

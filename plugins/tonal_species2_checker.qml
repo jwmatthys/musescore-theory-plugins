@@ -140,6 +140,7 @@ MuseScore {
             dyads[index].interval = null;
             dyads[index].motion = null;
             dyads[index].perfect = null;
+            dyads[index].inversion = null;
             dyads[index].bassNotePresent = false;
             dyads[index].roman = "";
             dyads[index].key = 0;
@@ -214,8 +215,6 @@ MuseScore {
         return dyads;
     }
 
-    // this is much more involved than it needs to be in 1st species, but it will be useful in
-    // the other species
     function processPitches(dyads) {
 
         for (var i = 0; i < dyads.length; i++) {
@@ -231,18 +230,6 @@ MuseScore {
                 dyads[i].motion = getMotion(dyads[i - 1].pitch[0], dyads[i - 1].pitch[1], dyads[i].pitch[0], dyads[i].pitch[1]);
             }
         }
-
-        /*
-        console.log("DYADS:", dyads.length);
-        for (var zz = 0; zz < dyads.length; zz++) {
-            try {
-                console.log(zz + "\t" + dyads[zz] + "\t" + dyads[zz].interval + "\t" + dyads[zz].bassNotePresent + "\t"+ dyads[zz].motion);
-                console.log("\t" + dyads[zz].tpc[0] + "\t" + dyads[zz].tpc[1] + "\t" + dyads[zz].pitch[0] + "\t" + dyads[zz].pitch[1]);
-            } catch (err) {
-                //console.log(zz, err);
-            }
-        }
-        */
         return dyads;
     }
 
@@ -504,7 +491,7 @@ MuseScore {
     function leapFromDissonance(dyads) {
         for (var i = 0; i < dyads.length - 1; i++) {
             for (var v = 0; v < 2; v++) {
-                if (v != cantusFirmus) {
+                if (v != cantusFirmus  && dyads[i].roman) {
                     try {
                         var chordTones = dyads[i].chordTones;
                         if (chordTones.indexOf(dyads[i].tpc[v]) < 0) {
@@ -746,7 +733,7 @@ MuseScore {
 
     function checkForWrongPitches(dyads, checkDownbeatsOnly) {
         for (var i = 0; i < dyads.length; i++) {
-            if (dyads[i].chordTones && (dyads[i].bassNotePresent == checkDownbeatsOnly) && !dyads[i].nct) {
+            if (dyads[i].roman && (dyads[i].bassNotePresent == checkDownbeatsOnly) && !dyads[i].nct) {
                 var correctPitches = dyads[i].chordTones;
                 for (var v = 0; v < 2; v++) {
                     var testPitch = dyads[i].tpc[v];
