@@ -491,7 +491,7 @@ MuseScore {
     function leapFromDissonance(dyads) {
         for (var i = 0; i < dyads.length - 1; i++) {
             for (var v = 0; v < 2; v++) {
-                if (v != cantusFirmus  && dyads[i].roman) {
+                if (v != cantusFirmus && dyads[i].roman) {
                     try {
                         var chordTones = dyads[i].chordTones;
                         if (chordTones.indexOf(dyads[i].tpc[v]) < 0) {
@@ -827,9 +827,9 @@ MuseScore {
                     }
                     dyads[index].nct = true;
                 }
+            } catch (err) {
+                console.log(err);
             }
-        } catch (err) {
-            console.log(err);
         }
     }
 
