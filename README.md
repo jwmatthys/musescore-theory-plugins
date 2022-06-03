@@ -39,9 +39,9 @@ The plugin does not enforce the rhythmic conventions of species counterpoint, so
 
 #### Tonal Counterpoint, Species I - III
 
-### Currently being updated! (Jan 2021)
+### Currently being updated! (Summer 2022)
 
-The tonal species plugins have been tested successfully with all of the examples in Seth Monahan’s excellent Two-Part Harmonic Species Counterpoint: An Introduction, available at http://sethmonahan.com/TH101HarmonicCounterpoint.html. The tonal plugins evaluation procedures are derived from the rules laid out in this book.
+The tonal species plugins have been tested successfully with all of the examples in Seth Monahan’s excellent Two-Part Harmonic Species Counterpoint: An Introduction available at http://sethmonahan.com/TH101HarmonicCounterpoint.html. The tonal plugins evaluation procedures are derived from the rules laid out in this book.
 
 ### Clearing annotations
 
