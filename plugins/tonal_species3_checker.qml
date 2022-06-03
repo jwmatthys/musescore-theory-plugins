@@ -3,9 +3,11 @@ import QtQuick.Dialogs 1.1
 import MuseScore 3.0
 
 MuseScore {
-    menuPath: "Plugins.Proof Reading.Tonal Species I Counterpoint Checker"
+    menuPath: "Plugins.Proof Reading.Tonal Species III Counterpoint Checker"
     description: "Check two-part tonal species counterpoint for errors.";
     version: "0.8"
+
+    property bool labelNCTs: true; // set this to true to have your NCTs labeled
 
     property bool majorMode: true;
     property bool noErrorsFound: true; // yet...: )
@@ -30,6 +32,9 @@ MuseScore {
 
     property
     var colorInfo: accessible_blue;
+
+    property
+    var colorNCT: accessible_green;
 
     property
     var keyMode: 0;
@@ -87,99 +92,124 @@ MuseScore {
         return 0;
     }
 
-    function isValidDyad(segment) {
-        return (segment &&
-            (segment.elementAt(0) && segment.elementAt(0).type == Element.CHORD) ||
-            (segment.elementAt(4) && segment.elementAt(4).type == Element.CHORD));
-    }
-
-    function assignVoices(segment) {
-        var voices = [];
-        var voiceIndex = 0;
-        for (var layer = 0; layer < 8; layer++) {
-            if (segment.elementAt(layer)) {
-                var thisLayerNotes = segment.elementAt(layer).notes;
-                if (thisLayerNotes) {
-                    for (var v = 0; v < thisLayerNotes.length; v++) {
-                        voices[voiceIndex++] = thisLayerNotes[v];
-                    }
-                } else {
-                    console.log("error in assignVoices");
-                }
-
-            }
+    function assignVoices(segment, voice) {
+        var voices = {};
+        var noteCount = 0;
+        try {
+            voices[0] = segment.elementAt(0).notes[0];
+            noteCount += voices[0].length;
+        } catch (err) {
+            //console.log(err, segment.tick, "missing treble voice");
+        }
+        try {
+            voices[1] = segment.elementAt(4).notes[0];
+            noteCount += voices[1].length;
+        } catch (err) {
+            //console.log(err, segment.tick, "missing bass voice");
+        }
+        if (noteCount > 2) {
+            msgWarning.text = "This plugin only works on two voice counterpoint.";
+            msgWarning.visible = true;
+            Qt.quit();
         }
         return voices;
     }
 
-    function getCurrentDyad(segment) {
-        // step 1: read pitches
-        if (isValidDyad(segment)) {
-            var voices = assignVoices(segment);
-            return voices;
-        }
-    }
-
     function getDyads(cursor, processAll, endTick) {
         var index = 0;
-        var dyads = new Array();
-        dyads[index] = new Object;
+        var dyads = [];
+        var lastPitch = [null, null];
+        var lastTPC = [null, null];
+        var lastKey;
+        var lastQuality;
+        var lastChordTones = [];
+        var lastInversion;
+        var lastRoman;
+        var previousTick = -1;
+        var lastVoices = [null, null];
+        dyads[0] = new Object;
         do {
             var segment = cursor.segment;
 
             if (!processAll && segment && segment.tick && segment.tick >= endTick) break;
 
-            if (segment.tick > dyads[index].tick) {
-                index++;
-                dyads[index] = new Object;
+            dyads[index] = new Object;
+            dyads[index].voices = [null, null];
+            dyads[index].pitch = [null, null];
+            dyads[index].tpc = [null, null];
+            dyads[index].interval = null;
+            dyads[index].motion = null;
+            dyads[index].perfect = null;
+            dyads[index].bassNotePresent = false;
+            dyads[index].roman = "";
+            dyads[index].key = 0;
+            dyads[index].quality = null;
+            dyads[index].chordTones = [];
+            dyads[index].tick = segment.tick;
+            dyads[index].nct = false;
+            dyads[index].doubleNeighbor = false;
+
+            var voices = assignVoices(segment);
+            dyads[index].voices = voices;
+
+            var harmony = getRomanNumeral(segment);
+            if (harmony) {
+                var rawRomanNumeral = harmony.text;
+                if ("Cad64" === rawRomanNumeral || "cad64" === rawRomanNumeral) {
+                    if (majorMode) rawRomanNumeral = "I64";
+                    else rawRomanNumeral = "i64";
+                }
+                var figBass = cleanFiguredBass(rawRomanNumeral);
+                var leftRomanNumeralClean = cleanRoman(rawRomanNumeral);
+                var tonicTPC = getCurrentTonicPC(rawRomanNumeral) + cursor.keySignature;
+                var quality = getQuality(leftRomanNumeralClean);
+                var inversion = getInversion(rawRomanNumeral);
+                dyads[index].roman = leftRomanNumeralClean;
+                var chordDef = chordDefinitions[leftRomanNumeralClean];
+                if (chordDef) {
+                    dyads[index].key = tonicTPC;
+                    dyads[index].chordTones = [];
+                    for (var i = 0; i < chordDef.length; i++) {
+                        dyads[index].chordTones[i] = chordDef[i];
+                    }
+                    dyads[index].quality = quality;
+                    addSeventhNinth(dyads[index], quality, figBass);
+                    secondaryAdjustments(dyads[index].chordTones, tonicTPC);
+                    dyads[index].inversion = inversion;
+                } else {
+                    var msg = "Unrecognized\nroman numeral\n\"" + leftRomanNumeralClean + "\".";
+                    markText(0, dyads[index], msg, colorInfo);
+                }
+                lastRoman = dyads[index].roman;
+                lastKey = dyads[index].key;
+                lastQuality = dyads[index].quality;
+                lastChordTones = dyads[index].chordTones;
+                lastInversion = dyads[index].inversion;
             }
 
-            dyads[index].tick = segment.tick;
+            for (var v = 0; v < 2; v++) {
+                try {
+                    dyads[index].pitch[v] = dyads[index].voices[v].pitch;
+                    dyads[index].tpc[v] = dyads[index].voices[v].tpc1;
+                    lastPitch[v] = dyads[index].voices[v].pitch;
+                    lastTPC[v] = dyads[index].voices[v].tpc1;
+                    lastVoices[v] = dyads[index].voices[v];
+                    if (v === 1) dyads[index].bassNotePresent = true;
+                } catch (err) {
+                    dyads[index].pitch[v] = lastPitch[v];
+                    dyads[index].tpc[v] = lastTPC[v];
+                    dyads[index].key = lastKey;
+                    dyads[index].chordTones = lastChordTones;
+                    dyads[index].quality = lastQuality;
+                    dyads[index].inversion = lastInversion;
+                    dyads[index].roman = lastRoman;
+                    dyads[index].voices[v] = lastVoices[v];
+                }
+            }
 
-            var voices = getCurrentDyad(segment);
-            if (voices) {
-                dyads[index].voices = [];
-                dyads[index].pitch = [];
-                dyads[index].tpc = [];
-                dyads[index].voices = voices; // use this to color error noteheads
-                if (voices.length > 2) {
-                    msgWarning.text = "This plugin only works on two voice counterpoint.";
-                    msgWarning.visible = true;
-                    Qt.quit();
-                }
-                for (var i = 0; i < voices.length; i++) {
-                    dyads[index].pitch[i] = voices[i].pitch;
-                    dyads[index].tpc[i] = voices[i].tpc1;
-                }
-                var harmony = getRomanNumeral(segment);
-                if (harmony) {
-                    var rawRomanNumeral = harmony.text;
-                    if ("Cad64" === rawRomanNumeral || "cad64" === rawRomanNumeral) {
-                        if (majorMode) rawRomanNumeral = "I64";
-                        else rawRomanNumeral = "i64";
-                    }
-                    var figBass = cleanFiguredBass(rawRomanNumeral);
-                    var leftRomanNumeralClean = cleanRoman(rawRomanNumeral);
-                    var tonicTPC = getCurrentTonicPC(rawRomanNumeral) + cursor.keySignature;
-                    var quality = getQuality(leftRomanNumeralClean);
-                    var inversion = getInversion(rawRomanNumeral);
-                    dyads[index].roman = leftRomanNumeralClean;
-                    var chordDef = chordDefinitions[leftRomanNumeralClean];
-                    if (chordDef) {
-                        dyads[index].key = tonicTPC;
-                        dyads[index].chordTones = [];
-                        for (var i = 0; i < chordDef.length; i++) {
-                            dyads[index].chordTones[i] = chordDef[i];
-                        }
-                        dyads[index].quality = quality;
-                        addSeventhNinth(dyads[index], quality, figBass);
-                        secondaryAdjustments(dyads[index].chordTones, tonicTPC);
-                        dyads[index].inversion = inversion;
-                    } else {
-                        var msg = "Unrecognized\nroman numeral\n\"" + leftRomanNumeralClean + "\".";
-                        markText(0, dyads[index], msg, colorInfo);
-                    }
-                }
+            if (segment.tick > previousTick) {
+                previousTick = segment.tick;
+                index++;
             }
         } while (cursor.next());
         return dyads;
@@ -188,56 +218,40 @@ MuseScore {
     // this is much more involved than it needs to be in 1st species, but it will be useful in
     // the other species
     function processPitches(dyads) {
-        // second pass - assign missing voices
-        var last = {};
+
         for (var i = 0; i < dyads.length; i++) {
+
             for (var v = 0; v < 2; v++) {
-                if (dyads[i].voices && dyads[i].voices[v]) {
-                    dyads[i].tpc[v] = dyads[i].voices[v].tpc1;
-                    dyads[i].pitch[v] = dyads[i].voices[v].pitch;
+                if (dyads[i].pitch[0] !== null && dyads[i].pitch[1] !== null) {
+                    dyads[i].interval = dyads[i].tpc[0] - dyads[i].tpc[1];
+                    dyads[i].perfect = (dyads[i].interval === 0 || dyads[i].interval === 1);
                 }
             }
-
             // get motion by comparing to previous notes
-            if (last[0] && last[1] && dyads[i].pitch && dyads[i].pitch) {
-                // note: maybe this could fail if notes are enharmonic -- but how often does that
-                // pop up in species? And what even is the motion for B - Cb? I would still call
-                // that oblique
-                dyads[i].motion = getMotion(last[0].pitch, last[1].pitch, dyads[i].pitch[0], dyads[i].pitch[1]);
-            }
-
-            if (dyads[i].tpc && dyads[i].tpc[0] && dyads[i].tpc[1]) {
-                dyads[i].completeDyad = true;
-                dyads[i].interval = dyads[i].tpc[0] - dyads[i].tpc[1];
-                dyads[i].perfect = (dyads[i].interval === 0 || dyads[i].interval === 1);
-            }
-            try {
-                last[0] = dyads[i].voices[0];
-                last[1] = dyads[i].voices[1];
-            } catch (err) {
-                console.log(err);
+            if (i > 0) {
+                dyads[i].motion = getMotion(dyads[i - 1].pitch[0], dyads[i - 1].pitch[1], dyads[i].pitch[0], dyads[i].pitch[1]);
             }
         }
         return dyads;
     }
 
-  function isThisARomanNumeral(annotation) {
-    var testElement = annotation.text.toUpperCase().split('/')[0].replace(/[^IVNFRGERCADT/]/g, '');
-    if (allRomanNumerals.indexOf(testElement) >= 0) return true;
-    return false;
-  }
-
-  function getRomanNumeral(segment) {
-    var aCount = 0;
-    var annotation = segment.annotations[aCount];
-    while (annotation) {
-      if (annotation.type == Element.HARMONY) {
-        if (isThisARomanNumeral(annotation)) return annotation;
-      }
-      annotation = segment.annotations[++aCount];
+    function isThisARomanNumeral(annotation) {
+        var testElement = annotation.text.toUpperCase().split('/')[0].replace(/[^IVNFRGERCADT/]/g, '');
+        if (allRomanNumerals.indexOf(testElement) >= 0) return true;
+        return false;
     }
-    return null;
-  }
+
+    function getRomanNumeral(segment) {
+        var aCount = 0;
+        var annotation = segment.annotations[aCount];
+        while (annotation) {
+            if (annotation.type == Element.HARMONY) {
+                if (isThisARomanNumeral(annotation)) return annotation;
+            }
+            annotation = segment.annotations[++aCount];
+        }
+        return null;
+    }
 
     function cleanRoman(rn) {
         return rn.split('/')[0].replace(/[2345679]/g, '');
@@ -344,10 +358,10 @@ MuseScore {
             }
             if (leadingTones.length > 1) {
                 for (var z = 0; z < leadingTones.length; z++) {
-                    leadingTones[z].color = colorDoubledLTError;
+                    leadingTones[z].color = colorPitchError;
                 }
-                var msg = "Doubled LT of key.";
-                markText(v, dyads[i], msg, colorDoubledLTError);
+                var msg = "Doubled LT.";
+                markText(v, dyads[i], msg, colorPitchError);
             }
         }
     }
@@ -402,46 +416,48 @@ MuseScore {
     function checkApproachToPerfect(dyads) {
         var msg = "xxx";
         for (var i = 0; i < dyads.length; i++) {
-            if (dyads[i].motion && dyads[i].perfect &&
-                (dyads[i].interval === dyads[i - 1].interval)) {
-                if ("similar" === dyads[i].motion) {
-                    msg = "Parallel " + intervalNames[dyads[i].interval + 11] + ".";
-                    dyads[i - 1].voices[0].color = colorApproachPerfect;
-                    dyads[i - 1].voices[1].color = colorApproachPerfect;
-                    dyads[i].voices[0].color = colorApproachPerfect;
-                    dyads[i].voices[1].color = colorApproachPerfect;
-                    markText(0, dyads[i - 1], msg, colorApproachPerfect);
-                } else if ("contrary" === dyads[i].motion) {
-                    msg = "Contrary " + intervalNames[dyads[i].interval + 11] + ".";
-                    dyads[i - 1].voices[0].color = colorApproachPerfect;
-                    dyads[i - 1].voices[1].color = colorApproachPerfect;
-                    dyads[i].voices[0].color = colorApproachPerfect;
-                    dyads[i].voices[1].color = colorApproachPerfect;
-                    markText(0, dyads[i - 1], msg, colorApproachPerfect);
-                } else if ("oblique" === dyads[i].motion &&
-                    dyads[i - 1].pitch[0] === dyads[i].pitch[0] &&
-                    dyads[i - 1].pitch[1] === dyads[i].pitch[1]) {
-                    msg = "Repeated notes\nin both parts.";
-                    dyads[i - 1].voices[0].color = colorApproachPerfect;
-                    dyads[i - 1].voices[1].color = colorApproachPerfect;
-                    dyads[i].voices[0].color = colorApproachPerfect;
-                    dyads[i].voices[1].color = colorApproachPerfect;
-                    markText(0, dyads[i - 1], msg, colorApproachPerfect);
-                }
-            } else {
-                if ("similar" === dyads[i].motion && dyads[i].perfect) {
-                    if (Math.abs(dyads[i].pitch[0] - dyads[i - 1].pitch[0]) > 2) {
-                        msg = "Perfect interval\napproached in\nsimilar motion.";
+            try {
+                if (dyads[i].interval === dyads[i - 1].interval) {
+                    if ("similar" === dyads[i].motion) {
+                        msg = "Parallel " + intervalNames[dyads[i].interval + 11] + ".";
+                        dyads[i - 1].voices[0].color = colorApproachPerfect;
+                        dyads[i - 1].voices[1].color = colorApproachPerfect;
+                        dyads[i].voices[0].color = colorApproachPerfect;
+                        dyads[i].voices[1].color = colorApproachPerfect;
+                        markText(0, dyads[i - 1], msg, colorApproachPerfect);
+                    } else if ("contrary" === dyads[i].motion) {
+                        msg = "Contrary " + intervalNames[dyads[i].interval + 11] + ".";
+                        dyads[i - 1].voices[0].color = colorApproachPerfect;
+                        dyads[i - 1].voices[1].color = colorApproachPerfect;
+                        dyads[i].voices[0].color = colorApproachPerfect;
+                        dyads[i].voices[1].color = colorApproachPerfect;
+                        markText(0, dyads[i - 1], msg, colorApproachPerfect);
+                    } else if ("oblique" === dyads[i].motion &&
+                        dyads[i - 1].pitch[0] === dyads[i].pitch[0] &&
+                        dyads[i - 1].pitch[1] === dyads[i].pitch[1]) {
+                        msg = "Repeated notes\nin both parts.";
                         dyads[i - 1].voices[0].color = colorApproachPerfect;
                         dyads[i - 1].voices[1].color = colorApproachPerfect;
                         dyads[i].voices[0].color = colorApproachPerfect;
                         dyads[i].voices[1].color = colorApproachPerfect;
                         markText(0, dyads[i - 1], msg, colorApproachPerfect);
                     }
+                } else {
+                    if ("similar" === dyads[i].motion && dyads[i].perfect) {
+                        if (Math.abs(dyads[i].pitch[0] - dyads[i - 1].pitch[0]) > 2) {
+                            msg = "Perfect interval\napproached in\nsimilar motion.";
+                            dyads[i - 1].voices[0].color = colorApproachPerfect;
+                            dyads[i - 1].voices[1].color = colorApproachPerfect;
+                            dyads[i].voices[0].color = colorApproachPerfect;
+                            dyads[i].voices[1].color = colorApproachPerfect;
+                            markText(0, dyads[i - 1], msg, colorApproachPerfect);
+                        }
+                    }
                 }
+            } catch (err) {
+                //console.log(err);
             }
         }
-
     }
 
     function checkHorizontalIntervals(dyads) {
@@ -477,16 +493,19 @@ MuseScore {
     function leapFromDissonance(dyads) {
         for (var i = 0; i < dyads.length - 1; i++) {
             for (var v = 0; v < 2; v++) {
-                if (v != cantusFirmus && dyads[i].tpc) {
-                    var chordTones = dyads[i].chordTones;
-                    if (dyads[i].tpc && chordTones.indexOf(dyads[i].tpc[v]) < 0) {
-                        if (dyads[i].pitch && dyads[i + 1].pitch &&
-                            Math.abs(dyads[i + 1].pitch[v] - dyads[i].pitch[v]) > 2) { // leap!
-                            var msg = "Leap from\nNCT.";
-                            dyads[i].voices[v].color = colorLeaps;
-                            dyads[i + 1].voices[v].color = colorLeaps;
-                            markText(v, dyads[i], msg, colorLeaps);
+                if (v != cantusFirmus && !dyads[i].doubleNeighbor) {
+                    try {
+                        var chordTones = dyads[i].chordTones;
+                        if (chordTones.indexOf(dyads[i].tpc[v]) < 0) {
+                            if (Math.abs(dyads[i + 1].pitch[v] - dyads[i].pitch[v]) > 2) { // leap!
+                                var msg = "Leap from\nNCT.";
+                                dyads[i].voices[v].color = colorLeaps;
+                                dyads[i + 1].voices[v].color = colorLeaps;
+                                markText(v, dyads[i], msg, colorLeaps);
+                            }
                         }
+                    } catch (err) {
+                        //console.log(err);
                     }
                 }
             }
@@ -496,15 +515,19 @@ MuseScore {
     function leapToDissonance(dyads) {
         for (var i = 1; i < dyads.length; i++) {
             for (var v = 0; v < 2; v++) {
-                if (v != cantusFirmus && dyads[i].tpc) {
-                    var chordTones = dyads[i].chordTones;
-                    if (dyads[i].tpc && chordTones.indexOf(dyads[i].tpc[v]) < 0) {
-                        if (Math.abs(dyads[i].pitch[v] - dyads[i - 1].pitch[v]) > 2) { // leap!
-                            var msg = "Leap to\nNCT.";
-                            dyads[i - 1].voices[v].color = colorLeaps;
-                            dyads[i].voices[v].color = colorLeaps;
-                            markText(v, dyads[i], msg, colorLeaps);
+                if (v != cantusFirmus && !dyads[i].doubleNeighbor) {
+                    try {
+                        var chordTones = dyads[i].chordTones;
+                        if (chordTones.indexOf(dyads[i].tpc[v]) < 0) {
+                            if (Math.abs(dyads[i].pitch[v] - dyads[i - 1].pitch[v]) > 2) { // leap!
+                                var msg = "Leap to\nNCT.";
+                                dyads[i - 1].voices[v].color = colorLeaps;
+                                dyads[i].voices[v].color = colorLeaps;
+                                markText(v, dyads[i], msg, colorLeaps);
+                            }
                         }
+                    } catch (err) {
+                        //console.log(err);
                     }
                 }
             }
@@ -537,7 +560,7 @@ MuseScore {
                             }
                         }
                     } catch (err) {
-                        console.log(err);
+                        //console.log(err);
                     }
                 }
             }
@@ -651,7 +674,7 @@ MuseScore {
                         if (dyads[i].pitch[v] != dyads[i + 1].pitch[v]) noteCount++;
                         if (Math.abs(dyads[i].pitch[v] - dyads[i + 1].pitch[v]) > 2) leapCount++;
                     } catch (err) {
-                        console.log(err);
+                        //console.log(err);
                     }
                 }
             }
@@ -687,36 +710,32 @@ MuseScore {
 
     function downbeatParallels(dyads) {
         var msg = "xxx";
-        for (var i = 1; i < dyads.length - 1; i++) {
-            if (dyads[i].completeDyad && dyads[i].perfect) {
+        for (var i = 0; i < dyads.length - 1; i++) {
+            if (dyads[i].bassNotePresent && dyads[i].perfect) {
                 var next;
-                for (next = i + 1; next < dyads.length; next++) {
-                    if (dyads[next].completeDyad) break;
+                for (next = i + 1; next <= dyads.length; next++) {
+                    if (dyads[next].bassNotePresent) break;
                 }
                 if (dyads[i].interval === dyads[next].interval) {
                     var motion = getMotion(dyads[i].pitch[0], dyads[i].pitch[1], dyads[next].pitch[0], dyads[next].pitch[1]);
-                    switch (motion) {
-                        case "similar":
-                            msg = "Downbeat\nparallel " + intervalNames[dyads[i].interval + 11] + ".";
-                            break;
-                        case "contrary":
-                            msg = "Downbeat\ncontrary " + intervalNames[dyads[i].interval + 11] + ".";
-                            break;
+                    if ("similar" === motion) {
+                        msg = "Downbeat\nparallel " + intervalNames[dyads[i].interval + 11] + ".";
+                    } else if ("contrary" === motion) {
+                        msg = "Downbeat\ncontrary " + intervalNames[dyads[i].interval + 11] + ".";
                     }
                     dyads[next].voices[0].color = colorApproachPerfect;
                     dyads[next].voices[1].color = colorApproachPerfect;
                     dyads[i].voices[0].color = colorApproachPerfect;
                     dyads[i].voices[1].color = colorApproachPerfect;
                     markText(0, dyads[i], msg, colorApproachPerfect);
-                    break;
                 }
             }
         }
     }
 
-    function checkForWrongPitches(dyads) {
+    function checkForWrongPitches(dyads, checkDownbeatsOnly) {
         for (var i = 0; i < dyads.length; i++) {
-            if (dyads[i].chordTones) {
+            if (dyads[i].chordTones && (dyads[i].bassNotePresent == checkDownbeatsOnly) && !dyads[i].nct) {
                 var correctPitches = dyads[i].chordTones;
                 for (var v = 0; v < 2; v++) {
                     var testPitch = dyads[i].tpc[v];
@@ -752,6 +771,140 @@ MuseScore {
         }
     }
 
+    function checkForRepeatedNotes(dyads) {
+        for (var i = 0; i < dyads.length; i++) {
+            try {
+                if (dyads[i].pitch[0] == dyads[i - 1].pitch[0]) {
+                    var msg = "Repeated notes\nare not allowed\nin Species III.";
+                    dyads[i].voices[0].color = colorVoiceLeading;
+                    dyads[i - 1].voices[0].color = colorVoiceLeading;
+                    markText(0, dyads[i], msg, colorVoiceLeading);
+                }
+            } catch (err) {
+                //console.log(err);
+            }
+        }
+    }
+
+    function checkforUnaccentedNCTs(dyads) {
+        for (var index = 0; index < dyads.length; index++) {
+            if (!dyads[index].bassNotePresent && !dyads[index].nct) {
+
+                var testPitch = dyads[index].pitch[0];
+                var previousPitch = dyads[index - 1].pitch[0];
+                var nextPitch = dyads[index + 1].pitch[0];
+                var testTPC = dyads[index].tpc[0]; // these are values 0-7 representing F,C,G,D,E etc.
+                var previousTPC = dyads[index - 1].tpc[0];
+                var nextTPC = dyads[index + 1].tpc[0];
+                var approach = testPitch - previousPitch;
+                var exit = nextPitch - testPitch;
+                if (Math.abs(approach) > 3) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                if (Math.abs(exit) > 3) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                var modDiff;
+                var approachTPC = Math.abs(testTPC - previousTPC) % 7;
+                var exitTPC = Math.abs(nextTPC - testTPC) % 7;
+                if (approachTPC != 2 && approachTPC != 5) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                if (exitTPC != 2 && exitTPC != 5) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                dyads[index].nct = true;
+                if (labelNCTs) {
+                    var msg = "";
+                    if (Math.sign(approach) == Math.sign(exit)) msg = "PT";
+                    else msg = "NT";
+                    markText(0, dyads[index], msg, colorNCT);
+                }
+            }
+        }
+    }
+
+    function checkForDoubleNeighbor(dyads) {
+        for (var index = 0; index < dyads.length; index++) {
+            if (!dyads[index].bassNotePresent && !dyads[index + 1].bassNotePresent) {
+                var testPitch = [];
+                var testTPC = [];
+                for (var t = 0; t < 4; t++) {
+                    testPitch[t] = dyads[index - 1 + t].pitch[0];
+                    testTPC[t] = dyads[index - 1 + t].tpc[0];
+                }
+                var melIntervals = [];
+                var directions = [];
+                var TPCdiffs = [];
+                if (testPitch[0] != testPitch[3]) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                for (var d = 0; d < 3; d++) {
+                    melIntervals[d] = testPitch[d + 1] - testPitch[d];
+                    directions[d] = Math.sign(melIntervals[d]);
+                    TPCdiffs[d] = Math.abs(testTPC[d + 1] - testTPC[d]) % 7;
+                }
+                if (Math.abs(melIntervals[0]) > 3) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+
+                if (Math.abs(melIntervals[2]) > 3) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+
+                if (directions[0] != directions[2]) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                if (directions[0] == directions[1]) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                if (TPCdiffs[0] != 2 && TPCdiffs[0] != 5) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                if (TPCdiffs[1] != 3 && TPCdiffs[1] != 3) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                if (TPCdiffs[2] != 2 && TPCdiffs[2] != 5) {
+                    dyads[index].nct = false;
+                    continue;
+                }
+                if (labelNCTs)
+                {
+                    var msg = "DN";
+                    markText(0, dyads[index], msg, colorNCT);
+
+                }
+                dyads[index].nct = true;
+                dyads[index].doubleNeighbor = true;
+                dyads[index + 1].nct = true;
+                dyads[index + 1].doubleNeighbor = true;
+                index++;
+                continue;
+            }
+        }
+    }
+
+    function rewind(cursor, processAll) { // go through all staves/voices simultaneously
+        if (processAll) {
+            //cursor.track = 0;
+            cursor.rewind(0);
+        } else {
+            cursor.rewind(1);
+        }
+    }
+
+
     //------------------------------------------------------------------------------
 
     onRun: {
@@ -779,7 +932,11 @@ MuseScore {
             }
             cursor.rewind(1);
         }
+        rewind(cursor, processAll);
+        var segment = cursor.segment;
 
+        keyMode = majorOrMinor(segment, processAll, endTick);
+        rewind(cursor, processAll);
         // go through all staves/voices simultaneously
         if (processAll) {
             //cursor.track = 0;
@@ -787,31 +944,34 @@ MuseScore {
         } else {
             cursor.rewind(1);
         }
-        var segment = cursor.segment;
-
-        keyMode = majorOrMinor(segment, processAll, endTick);
         var dyads = getDyads(cursor, processAll, endTick);
 
         processPitches(dyads);
 
-        checkForWrongPitches(dyads);
+        checkForWrongPitches(dyads, true); // true = check only downbeats
+        checkApproachToPerfect(dyads);
         checkForVoiceCrossing(dyads);
 
-        checkApproachToPerfect(dyads);
+        checkForRepeatedNotes(dyads);
+
 
         stepBack(dyads);
         checkHorizontalIntervals(dyads);
-        //leapToDissonance(dyads);
-        //leapFromDissonance(dyads);
-        //downbeatParallels(dyads);
+        downbeatParallels(dyads);
         consecutiveLeaps(dyads);
         outlinedTritone(dyads);
+
+        checkForDoubleNeighbor(dyads);
+        checkforUnaccentedNCTs(dyads);
+        checkForWrongPitches(dyads, false); // false = check everything but downbeats
+
+        leapToDissonance(dyads);
+        leapFromDissonance(dyads);
 
         checkForDoubledLT(dyads);
 
         ratioOfPerfect(dyads);
         ratioOfLeaps(dyads);
-
 
         if (noErrorsFound) {
             msgWarning.text = "Great job! No errors found.";
@@ -898,22 +1058,23 @@ MuseScore {
         "aug3"
     ];
 
-  property
-  var allRomanNumerals: [
-    "I",
-    "II",
-    "III",
-    "IV",
-    "V",
-    "VI",
-    "VII",
-    "FR",
-    "GER",
-    "IT",
-    "CAD",
-    "CT",
-    "N"
-  ];
+    property
+    var allRomanNumerals: [
+        "I",
+        "II",
+        "III",
+        "IV",
+        "V",
+        "VI",
+        "VII",
+        "FR",
+        "GER",
+        "IT",
+        "CAD",
+        "CT",
+        "N"
+    ];
+
 
     property
     var accessible_red: "#B91C1C";
