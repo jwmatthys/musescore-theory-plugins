@@ -1,6 +1,6 @@
 import QtQuick 2.0
-import QtQuick.Dialogs 1.1
 import MuseScore 3.0
+import Muse.UiComponents 1.0
 
 MuseScore {
   menuPath: "Plugins.Proof Reading.SATB Checker"
