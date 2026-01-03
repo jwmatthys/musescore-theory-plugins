@@ -52,27 +52,43 @@ MuseScore {
     function getChordData(rn, tonicTPC) {
         if (!rn || rn === "") return { tones: [], tendTones: [null, null] };
 
-        var lookup = rn.split('/')[0].replace("ø", "0");
+        var parts = rn.split('/');
+        var primaryPart = parts[0].replace("ø", "0");
+        var targetPart = parts.length > 1 ? parts[1].replace("ø", "0") : null;
+
+        // Determine the "Local Tonic" (the TPC of the root of the chord after the slash)
+        var localTonic = tonicTPC; 
+        if (targetPart) {
+            var targetData = getChordData(targetPart, tonicTPC);
+            if (targetData.tones.length > 0) {
+                // Rule 1: viio chords use index 2 (the leading tone is NOT the root)
+                if (targetPart.toLowerCase().indexOf("viio") !== -1 || targetPart.toLowerCase().indexOf("vii0") !== -1) {
+                    localTonic = targetData.tones[2];
+                }
+                // Rule 2: Aug 6th chords use index 3
+                else if (targetPart.match(/^(It|Fr|Ger)/i)) {
+                    localTonic = targetData.tones[3];
+                }
+                // Standard: Root is at index 0
+                else {
+                    localTonic = targetData.tones[0];
+                }
+            }
+        }
+
+        // Now analyze the Primary Part (the V7 in V7/IV) relative to the localTonic
+        var lookup = primaryPart;
         var isSeventh = lookup.match(/7|65|43|42/) !== null;
         var baseRN = lookup.replace(/[765432]/g, ''); 
         var searchKey = null;
 
-        // --- NEW PRIORITY LOGIC ---
-
-        // 1. Try Exact Match (e.g., "V65")
         if (chordMap[lookup]) {
             searchKey = lookup;
-        } 
-        // 2. If it's labeled as a 7th (65, 43, etc), try the "7" version immediately
-        else if (isSeventh && chordMap[baseRN + "7"]) {
+        } else if (isSeventh && chordMap[baseRN + "7"]) {
             searchKey = baseRN + "7";
-        }
-        // 3. Try Base Match (e.g., "Cad" or "V")
-        else if (chordMap[baseRN]) {
+        } else if (chordMap[baseRN]) {
             searchKey = baseRN;
-        }
-        // 4. Case-Insensitive Base Match
-        else {
+        } else {
             var capitalized = baseRN.charAt(0).toUpperCase() + baseRN.slice(1);
             if (chordMap[capitalized]) searchKey = capitalized;
         }
@@ -80,10 +96,8 @@ MuseScore {
         var offsets = chordMap[searchKey];
         if (!offsets) return { tones: [], tendTones: [null, null] };
         
-        // Debugging: uncomment next line to see results in Plugin Creator console
-        // console.log("RN: " + rn + " | SearchKey: " + searchKey + " | Offsets: " + offsets);
-
-        var tones = offsets.map(o => tonicTPC + o);
+        // Map offsets onto the localTonic instead of global tonicTPC
+        var tones = offsets.map(o => localTonic + o);
         var tendTones = [null, null];
         var upperBase = baseRN.toUpperCase();
 
