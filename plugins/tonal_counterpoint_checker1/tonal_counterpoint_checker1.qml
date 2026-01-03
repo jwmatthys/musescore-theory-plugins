@@ -145,26 +145,48 @@ MuseScore {
         return errors;
     }
 
-    function checkTonesAndTendencies(notes, nextNotes, rn, hData, bassID) {
+    function checkTonesAndTendencies(notes, nextNotes, rn, hData, bassID, sopID) {
         var errors = [];
+        
+        // 1. Identify the specific notes for Bass and Soprano in this slice
+        var bassNote = notes.find(n => n.staffIdx === bassID.staffIdx && n.voice === bassID.voice);
+        var sopNote  = notes.find(n => n.staffIdx === sopID.staffIdx && n.voice === sopID.voice);
+
+        // 2. Check for Doubled Tendency Tones (Lead Tone or 7th)
+        if (bassNote && sopNote) {
+            var isTendency0 = (hData.tendTones[0] !== null && bassNote.tpc === hData.tendTones[0]);
+            var isTendency1 = (hData.tendTones[1] !== null && bassNote.tpc === hData.tendTones[1]);
+            
+            // If they share the same TPC and that TPC is a tendency tone...
+            if ((isTendency0 || isTendency1) && bassNote.tpc === sopNote.tpc) {
+                errors.push("Doubled\nTendency Tone");
+                bassNote.color = colorError;
+                sopNote.color = colorError;
+            }
+        }
+
         notes.forEach(note => {
-            // Check 1: Non-Chord Tones
+            // 3. Non-Chord Tones Check
             if (rn !== "" && hData.tones.indexOf(note.tpc) === -1) {
                 errors.push("Non-Chord (" + tpcToName(note.tpc) + ")");
                 note.color = colorDiss;
             }
-            // Check 2: Tendency Tones
+
+            // 4. Resolution Check (for notes that aren't the bass)
             var isB = (note.staffIdx === bassID.staffIdx && note.voice === bassID.voice);
             if (!isB && nextNotes) {
                 var nN = findNoteInSameVoice(note, nextNotes);
                 if (nN) {
-                    var dist = nN.pitch - note.pitch;
+                    var dist = nN.pitch - note.pitch; // semitone distance
+                    
+                    // Leading Tone (tendTones[0]) must resolve UP (1 or 2 semitones)
                     if (hData.tendTones[0] === note.tpc && (dist < 1 || dist > 2)) {
-                        errors.push(tpcToName(note.tpc) + " should\nresolve UP");
+                        errors.push(tpcToName(note.tpc) + " should\nstep UP");
                         note.color = colorError;
                     }
+                    // Seventh / Ger/It/Fr (tendTones[1]) must resolve DOWN (-1 or -2 semitones)
                     if (hData.tendTones[1] === note.tpc && (dist > -1 || dist < -2)) {
-                        errors.push(tpcToName(note.tpc) + " should\nresolve DOWN");
+                        errors.push(tpcToName(note.tpc) + " should\nstep DOWN");
                         note.color = colorError;
                     }
                 }
@@ -180,25 +202,47 @@ MuseScore {
         for (var x = 0; x < notes.length; x++) {
             for (var y = x + 1; y < notes.length; y++) {
                 var n1 = notes[x], n2 = notes[y];
-                var nN1 = findNoteInSameVoice(n1, nextNotes), nN2 = findNoteInSameVoice(n2, nextNotes);
+                var nN1 = findNoteInSameVoice(n1, nextNotes);
+                var nN2 = findNoteInSameVoice(n2, nextNotes);
                 
                 if (nN1 && nN2) {
-                    var lC = (n1.pitch < n2.pitch) ? n1 : n2, hC = (n1.pitch < n2.pitch) ? n2 : n1;
-                    var lN = (nN1.pitch < nN2.pitch) ? nN1 : nN2, hN = (nN1.pitch < nN2.pitch) ? nN2 : nN1;
-                    var cT = getIntervalType(lC, hC), nT = getIntervalType(lN, hN);
+                    // --- 1. MELODIC QUALITY CHECK (Aug/Dim Melodic Leaps) ---
+                    // We check both voices in the current pair
+                    [n1, n2].forEach(note => {
+                        var nextNote = (note === n1) ? nN1 : nN2;
+                        var tpcDist = nextNote.tpc - note.tpc;
+                        if (Math.abs(tpcDist) >= 6) {
+                            var qual = (tpcDist >= 6) ? "Aug." : "Dim.";
+                            errors.push("Melodic " + qual);
+                            note.color = colorError;
+                            nextNote.color = colorError;
+                        }
+                    });
+
+                    // --- 2. SETUP FOR HARMONIC ANALYSIS ---
+                    var lC = (n1.pitch < n2.pitch) ? n1 : n2; 
+                    var hC = (n1.pitch < n2.pitch) ? n2 : n1;
+                    var lN = (nN1.pitch < nN2.pitch) ? nN1 : nN2; 
+                    var hN = (nN1.pitch < nN2.pitch) ? nN2 : nN1;
+
+                    var cT = getIntervalType(lC, hC); // Current Perfect Interval
+                    var nT = getIntervalType(lN, hN); // Next Perfect Interval
                     
-                    // Parallels
+                    // --- 3. PARALLEL PERFECT INTERVALS ---
                     if (cT && cT === nT && (nN1.pitch !== n1.pitch)) {
                         errors.push("Parallel " + nT);
                         lC.color = colorError; hC.color = colorError;
                         lN.color = colorError; hN.color = colorError;
                     }
                     
-                    // Directs
+                    // --- 4. DIRECT (HIDDEN) PERFECT INTERVALS ---
                     var isBass = (lC.staffIdx === bassID.staffIdx && lC.voice === bassID.voice);
                     var isSop = (hC.staffIdx === sopID.staffIdx && hC.voice === sopID.voice);
+                    
                     if (isBass && isSop && nT && !cT) {
-                        var bM = lN.pitch - lC.pitch, sM = hN.pitch - hC.pitch;
+                        var bM = lN.pitch - lC.pitch; // Bass Motion
+                        var sM = hN.pitch - hC.pitch; // Soprano Motion
+                        // Similar motion into a perfect interval with a soprano leap
                         if ((bM * sM > 0) && Math.abs(sM) > 2) {
                             errors.push("Direct " + nT);
                             hN.color = colorError; 
@@ -313,7 +357,7 @@ MuseScore {
 
             // Execute separated checks
             errors = errors.concat(checkVoiceCrossing(voices, notes));
-            errors = errors.concat(checkTonesAndTendencies(notes, nextNotes, rn, hData, bassID));
+            errors = errors.concat(checkTonesAndTendencies(notes, nextNotes, rn, hData, bassID, sopID));
             errors = errors.concat(checkVoiceLeading(notes, nextNotes, bassID, sopID));
 
             // Write results
