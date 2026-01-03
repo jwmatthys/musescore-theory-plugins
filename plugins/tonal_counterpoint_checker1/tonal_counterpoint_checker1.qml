@@ -22,7 +22,7 @@ MuseScore {
         "i7":    [0, 1, -3, -2], "ii7":   [2, 3, -1, 0], "iii7":  [4, 5, 1, 2],  "iv7":   [-1, 0, -4, -3], "vi7":   [3, 4, 0, 1],
         "V7":    [1, 2, 5, -1],  "viio7": [2, -1, 5, -4], "vii07": [2, -1, 5, 3],  "ii07":  [2, -4, -1, 0],
         "It6":   [0, 0, 6, -4],  "Fr65":    [0, 2, 6, -4],   "Ger65":   [0, -3, 6, -4], "N6":     [-5, -4, -1],
-        "It":    [0, 0, 6, -4],  "Fr":    [0, 2, 6, -4],   "Ger":   [0, -3, 6, -4], "N":     [-5, -4, -1],   "CAD":   [0, 1, 4]
+        "It":    [0, 0, 6, -4],  "Fr":    [0, 2, 6, -4],   "Ger":   [0, -3, 6, -4], "N":     [-5, -4, -1], "Cad": [1, 0, 4]
     }
 
     // --- HELPER FUNCTIONS ---
@@ -54,28 +54,43 @@ MuseScore {
 
         var lookup = rn.split('/')[0].replace("ø", "0");
         var isSeventh = lookup.match(/7|65|43|42/) !== null;
-        var baseRN = lookup.replace(/[765432]/g, '');
-        
-        var searchKey = lookup;
-        if (!chordMap[searchKey]) {
-            searchKey = isSeventh ? baseRN + "7" : baseRN;
+        var baseRN = lookup.replace(/[765432]/g, ''); 
+        var searchKey = null;
+
+        // --- NEW PRIORITY LOGIC ---
+
+        // 1. Try Exact Match (e.g., "V65")
+        if (chordMap[lookup]) {
+            searchKey = lookup;
+        } 
+        // 2. If it's labeled as a 7th (65, 43, etc), try the "7" version immediately
+        else if (isSeventh && chordMap[baseRN + "7"]) {
+            searchKey = baseRN + "7";
+        }
+        // 3. Try Base Match (e.g., "Cad" or "V")
+        else if (chordMap[baseRN]) {
+            searchKey = baseRN;
+        }
+        // 4. Case-Insensitive Base Match
+        else {
+            var capitalized = baseRN.charAt(0).toUpperCase() + baseRN.slice(1);
+            if (chordMap[capitalized]) searchKey = capitalized;
         }
 
         var offsets = chordMap[searchKey];
         if (!offsets) return { tones: [], tendTones: [null, null] };
         
+        // Debugging: uncomment next line to see results in Plugin Creator console
+        // console.log("RN: " + rn + " | SearchKey: " + searchKey + " | Offsets: " + offsets);
+
         var tones = offsets.map(o => tonicTPC + o);
         var tendTones = [null, null];
+        var upperBase = baseRN.toUpperCase();
 
-        if (baseRN === "V" || baseRN === "viio" || baseRN === "vii0") {
+        if (upperBase === "V" || upperBase === "VIIO" || upperBase === "VII0") {
             tendTones[0] = tones[2]; 
             if (tones.length === 4) tendTones[1] = tones[3]; 
         } 
-        else if (baseRN.match(/^(It|Fr|Ger)$/i)) {
-            tendTones[0] = tones[2];
-            tendTones[1] = tones[3];
-        }
-
         return { tones: tones, tendTones: tendTones };
     }
 
