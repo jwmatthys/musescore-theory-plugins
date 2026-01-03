@@ -3,8 +3,8 @@ import MuseScore
 
 MuseScore {
     title: "Tonal Counterpoint Species 2 Checker"
-    description: "Checks Species 2 (Passing Tones & Chord Skips)"
-    version: "3.0"
+    description: "Checks two-part species 2 counterpoint with passing tones"
+    version: "1.0"
     categoryCode: "Proofreading"
     requiresScore: true
 
@@ -22,7 +22,7 @@ MuseScore {
         "i7":    [0, 1, -3, -2], "ii7":   [2, 3, -1, 0], "iii7":  [4, 5, 1, 2],  "iv7":   [-1, 0, -4, -3], "vi7":   [3, 4, 0, 1],
         "V7":    [1, 2, 5, -1],  "viio7": [2, -1, 5, -4], "vii07": [2, -1, 5, 3],  "ii07":  [2, -4, -1, 0],
         "It6":   [0, 0, 6, -4],  "Fr65":    [0, 2, 6, -4],   "Ger65":   [0, -3, 6, -4], "N6":     [-5, -4, -1],
-        "It":    [0, 0, 6, -4],  "Fr":    [0, 2, 6, -4],   "Ger":   [0, -3, 6, -4], "N":     [-5, -4, -1],   "CAD":   [0, 1, 4]
+        "It":    [0, 0, 6, -4],  "Fr":    [0, 2, 6, -4],   "Ger":   [0, -3, 6, -4], "N":     [-5, -4, -1], "Cad": [1, 0, 4]
     }
 
     // --- HELPER FUNCTIONS ---
@@ -42,7 +42,7 @@ MuseScore {
     }
 
     function findNoteInSameVoice(sourceNote, nextTickNotes) {
-        if (!sourceNote || !nextTickNotes) return null;
+        if (!sourceNote) return null;
         for (var i = 0; i < nextTickNotes.length; i++) {
             if (nextTickNotes[i].staffIdx === sourceNote.staffIdx && nextTickNotes[i].voice === sourceNote.voice) return nextTickNotes[i];
         }
@@ -51,27 +51,135 @@ MuseScore {
 
     function getChordData(rn, tonicTPC) {
         if (!rn || rn === "") return { tones: [], tendTones: [null, null] };
-        var lookup = rn.split('/')[0].replace("ø", "0");
+
+        var parts = rn.split('/');
+        var primaryPart = parts[0].replace("ø", "0");
+        var targetPart = parts.length > 1 ? parts[1].replace("ø", "0") : null;
+
+        var localTonic = tonicTPC; 
+        if (targetPart) {
+            var targetData = getChordData(targetPart, tonicTPC);
+            if (targetData.tones.length > 0) {
+                if (targetPart.toLowerCase().indexOf("viio") !== -1 || targetPart.toLowerCase().indexOf("vii0") !== -1) {
+                    localTonic = targetData.tones[2];
+                }
+                else if (targetPart.match(/^(It|Fr|Ger)/i)) {
+                    localTonic = targetData.tones[3];
+                }
+                else {
+                    localTonic = targetData.tones[0];
+                }
+            }
+        }
+
+        var lookup = primaryPart;
         var isSeventh = lookup.match(/7|65|43|42/) !== null;
-        var baseRN = lookup.replace(/[765432]/g, '');
-        var searchKey = lookup;
-        if (!chordMap[searchKey]) searchKey = isSeventh ? baseRN + "7" : baseRN;
+        var baseRN = lookup.replace(/[765432]/g, ''); 
+        var searchKey = null;
+
+        if (chordMap[lookup]) {
+            searchKey = lookup;
+        } else if (isSeventh && chordMap[baseRN + "7"]) {
+            searchKey = baseRN + "7";
+        } else if (chordMap[baseRN]) {
+            searchKey = baseRN;
+        } else {
+            var capitalized = baseRN.charAt(0).toUpperCase() + baseRN.slice(1);
+            if (chordMap[capitalized]) searchKey = capitalized;
+        }
+
         var offsets = chordMap[searchKey];
         if (!offsets) return { tones: [], tendTones: [null, null] };
-        var tones = offsets.map(o => tonicTPC + o);
+        
+        var tones = offsets.map(o => localTonic + o);
         var tendTones = [null, null];
-        if (baseRN === "V" || baseRN === "viio" || baseRN === "vii0") {
+        var upperBase = baseRN.toUpperCase();
+
+        if (upperBase === "V" || upperBase === "VIIO" || upperBase === "VII0") {
             tendTones[0] = tones[2]; 
             if (tones.length === 4) tendTones[1] = tones[3]; 
         } 
-        else if (baseRN.match(/^(It|Fr|Ger)$/i)) {
-            tendTones[0] = tones[2]; tendTones[1] = tones[3];
-        }
         return { tones: tones, tendTones: tendTones };
     }
 
+    // --- SPECIES 2 SPECIFIC FUNCTIONS ---
+
+    function identifyBassOnsets(sortedTicks, tickGroups, bassID) {
+        var bassOnsets = [];
+        var lastBassTick = null;
+        
+        for (var i = 0; i < sortedTicks.length; i++) {
+            var tick = sortedTicks[i];
+            var notes = tickGroups[tick];
+            var bassNote = notes.find(n => n.staffIdx === bassID.staffIdx && n.voice === bassID.voice);
+            
+            if (bassNote) {
+                // Check if this is a new bass note (different from last)
+                if (lastBassTick === null) {
+                    bassOnsets.push(tick);
+                    lastBassTick = tick;
+                } else {
+                    var lastBassNote = tickGroups[lastBassTick].find(n => 
+                        n.staffIdx === bassID.staffIdx && n.voice === bassID.voice);
+                    if (!lastBassNote || bassNote.pitch !== lastBassNote.pitch || 
+                        bassNote.tpc !== lastBassNote.tpc) {
+                        bassOnsets.push(tick);
+                        lastBassTick = tick;
+                    }
+                }
+            }
+        }
+        return bassOnsets;
+    }
+
+    function getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC) {
+        // Find the most recent bass onset at or before this tick
+        var contextTick = null;
+        for (var i = bassOnsets.length - 1; i >= 0; i--) {
+            if (bassOnsets[i] <= tick) {
+                contextTick = bassOnsets[i];
+                break;
+            }
+        }
+        
+        if (contextTick === null) return { rn: "", hData: getChordData("", tonicTPC) };
+        
+        var cursor = curScore.newCursor(); 
+        cursor.rewindToTick(contextTick);
+        var rn = "";
+        if (cursor.segment) {
+            cursor.segment.annotations.forEach(ann => {
+                if (ann.type === Element.HARMONY) rn = ann.text;
+            });
+        }
+        
+        return { rn: rn, hData: getChordData(rn, tonicTPC) };
+    }
+
+    function isPassingTone(note, prevNote, nextNote, hData) {
+        if (!prevNote || !nextNote) return false;
+        
+        // Check if non-chord tone
+        if (hData.tones.indexOf(note.tpc) !== -1) return true; // It's a chord tone, not passing
+        
+        // Check stepwise motion
+        var stepToPrev = Math.abs(note.pitch - prevNote.pitch);
+        var stepToNext = Math.abs(note.pitch - nextNote.pitch);
+        
+        if (stepToPrev > 2 || stepToNext > 2) return false; // Not stepwise
+        
+        // Check if passing between two notes (melodic direction)
+        var dirToPrev = note.pitch - prevNote.pitch;
+        var dirToNext = nextNote.pitch - note.pitch;
+        
+        // Same direction = passing tone
+        return (dirToPrev * dirToNext > 0);
+    }
+
+    // --- CHECK LOGIC METHODS ---
+
     function determineTonic(sortedTicks, tickGroups) {
-        var tpc = 14; 
+        var tpc = 14; // default C
         sortedTicks.forEach(t => {
             var cursor = curScore.newCursor(); cursor.rewindToTick(t);
             if (cursor.segment && cursor.segment.annotations) {
@@ -86,72 +194,159 @@ MuseScore {
         return tpc;
     }
 
-    // --- CHECK LOGIC METHODS ---
-
-    // TYPE 1: Bass Onset Checks (Strict Consonance / Chord Tones)
-    function checkBassOnset(notes, hData) {
+    function checkVoiceCrossing(voices, notes) {
         var errors = [];
+        if (voices.length > 1) {
+            for (var v = 0; v < voices.length - 1; v++) {
+                var lowV = voices[v], highV = voices[v+1];
+                var ln = null, hn = null;
+                notes.forEach(n => {
+                    if (n.staffIdx === lowV.staffIdx && n.voice === lowV.voice) ln = n;
+                    if (n.staffIdx === highV.staffIdx && n.voice === highV.voice) hn = n;
+                });
+                if (ln && hn && ln.pitch > hn.pitch) {
+                    errors.push("Voice Crossing");
+                    ln.color = colorError; hn.color = colorError;
+                }
+            }
+        }
+        return errors;
+    }
+
+    function checkTonesAndTendencies(notes, nextNotes, rn, hData, bassID, sopID, isBassOnset) {
+        var errors = [];
+        
+        var bassNote = notes.find(n => n.staffIdx === bassID.staffIdx && n.voice === bassID.voice);
+        var sopNote  = notes.find(n => n.staffIdx === sopID.staffIdx && n.voice === sopID.voice);
+
+        // Only check doubled tendency tones at bass onsets
+        if (isBassOnset && bassNote && sopNote) {
+            var isTendency0 = (hData.tendTones[0] !== null && bassNote.tpc === hData.tendTones[0]);
+            var isTendency1 = (hData.tendTones[1] !== null && bassNote.tpc === hData.tendTones[1]);
+            
+            if ((isTendency0 || isTendency1) && bassNote.tpc === sopNote.tpc) {
+                errors.push("Doubled\nTendency Tone");
+                bassNote.color = colorError;
+                sopNote.color = colorError;
+            }
+        }
+
         notes.forEach(note => {
-            // In Species 1/Downbeats, we expect Chord Tones
-            if (hData.tones.length > 0 && hData.tones.indexOf(note.tpc) === -1) {
-                errors.push("Non-Chord (" + tpcToName(note.tpc) + ")");
-                note.color = colorDiss;
+            // Non-chord tones will be checked separately for passing tone validity
+            // Just mark them here for visibility
+            if (rn !== "" && hData.tones.indexOf(note.tpc) === -1) {
+                var isB = (note.staffIdx === bassID.staffIdx && note.voice === bassID.voice);
+                if (!isB) { // Bass shouldn't have non-chord tones in Species 2
+                    note.color = colorDiss; // Mark but don't error yet
+                }
+            }
+
+            // Resolution check only at bass onsets
+            var isB = (note.staffIdx === bassID.staffIdx && note.voice === bassID.voice);
+            if (isBassOnset && !isB && nextNotes) {
+                var nN = findNoteInSameVoice(note, nextNotes);
+                if (nN) {
+                    var dist = nN.pitch - note.pitch;
+                    
+                    if (hData.tendTones[0] === note.tpc && (dist < 1 || dist > 2)) {
+                        errors.push(tpcToName(note.tpc) + " should\nstep UP");
+                        note.color = colorError;
+                    }
+                    if (hData.tendTones[1] === note.tpc && (dist > -1 || dist < -2)) {
+                        errors.push(tpcToName(note.tpc) + " should\nstep DOWN");
+                        note.color = colorError;
+                    }
+                }
             }
         });
         return errors;
     }
 
-    // TYPE 2 & 3: Interior Note Checks (Interval vs Bass, Motion Type)
-    function checkMelodicFunction(prevNote, currNote, nextNote, hData, activeBass) {
+    function checkVoiceLeading(notes, nextNotes, bassID, sopID, checkPerfects) {
         var errors = [];
-        
-        // A. Identify Interval against Sustained Bass
-        // (You can expand this to log the interval or flag dissonances if desired)
-        // var intervalType = getIntervalType(activeBass, currNote);
+        if (!nextNotes) return errors;
 
-        // B. Analyze Motion (Chord Tone vs Passing Tone)
-        var isChordTone = hData.tones.indexOf(currNote.tpc) !== -1;
+        for (var x = 0; x < notes.length; x++) {
+            for (var y = x + 1; y < notes.length; y++) {
+                var n1 = notes[x], n2 = notes[y];
+                var nN1 = findNoteInSameVoice(n1, nextNotes);
+                var nN2 = findNoteInSameVoice(n2, nextNotes);
+                
+                if (nN1 && nN2) {
+                    // Melodic quality check
+                    [n1, n2].forEach(note => {
+                        var nextNote = (note === n1) ? nN1 : nN2;
+                        var tpcDist = nextNote.tpc - note.tpc;
+                        if (Math.abs(tpcDist) >= 6) {
+                            var qual = (tpcDist >= 6) ? "Aug." : "Dim.";
+                            errors.push("Melodic " + qual);
+                            note.color = colorError;
+                            nextNote.color = colorError;
+                        }
+                    });
 
-        if (isChordTone) {
-            // Valid Chord Skip / Arpeggiation -> OK
-            return errors; 
-        }
+                    // Only check parallel/direct perfects at bass onsets
+                    if (checkPerfects) {
+                        var lC = (n1.pitch < n2.pitch) ? n1 : n2; 
+                        var hC = (n1.pitch < n2.pitch) ? n2 : n1;
+                        var lN = (nN1.pitch < nN2.pitch) ? nN1 : nN2; 
+                        var hN = (nN1.pitch < nN2.pitch) ? nN2 : nN1;
 
-        // If not a Chord Tone, it MUST be a Passing Tone
-        var isPassing = false;
-        if (prevNote && nextNote) {
-            var approachInterval = currNote.pitch - prevNote.pitch;
-            var departureInterval = nextNote.pitch - currNote.pitch;
-            
-            // Check for Steps (semitone dist 1 or 2)
-            var approachIsStep = Math.abs(approachInterval) >= 1 && Math.abs(approachInterval) <= 2;
-            var departureIsStep = Math.abs(departureInterval) >= 1 && Math.abs(departureInterval) <= 2;
-            
-            // Check Direction (must continue same way)
-            var sameDirection = (approachInterval * departureInterval) > 0;
-
-            if (approachIsStep && departureIsStep && sameDirection) {
-                isPassing = true;
+                        var cT = getIntervalType(lC, hC);
+                        var nT = getIntervalType(lN, hN);
+                        
+                        // Parallel perfects
+                        if (cT && cT === nT && (nN1.pitch !== n1.pitch)) {
+                            errors.push("Parallel " + nT);
+                            lC.color = colorError; hC.color = colorError;
+                            lN.color = colorError; hN.color = colorError;
+                        }
+                        
+                        // Direct perfects
+                        var isBass = (lC.staffIdx === bassID.staffIdx && lC.voice === bassID.voice);
+                        var isSop = (hC.staffIdx === sopID.staffIdx && hC.voice === sopID.voice);
+                        
+                        if (isBass && isSop && nT && !cT) {
+                            var bM = lN.pitch - lC.pitch;
+                            var sM = hN.pitch - hC.pitch;
+                            if ((bM * sM > 0) && Math.abs(sM) > 2) {
+                                errors.push("Direct " + nT);
+                                hN.color = colorError; 
+                            }
+                        }
+                    }
+                }
             }
         }
-
-        if (!isPassing) {
-            // Note is neither a Chord Tone nor a Valid Passing Tone
-            errors.push("Invalid Motion\n(Must be PT or CT)");
-            currNote.color = colorError;
-        } else {
-            // Optional: Mark passing tones visually for debug?
-            // currNote.color = "#2e7d32"; // green
-        }
-        
         return errors;
     }
 
-    function checkVoiceCrossing(bass, sop) {
+    function checkPassingTones(sortedTicks, tickGroups, bassOnsets, tonicTPC, bassID) {
         var errors = [];
-        if (bass && sop && bass.pitch > sop.pitch) {
-            errors.push("Voice Crossing");
-            bass.color = colorError; sop.color = colorError;
+        
+        for (var i = 0; i < sortedTicks.length; i++) {
+            var tick = sortedTicks[i];
+            var isBassOnset = (bassOnsets.indexOf(tick) !== -1);
+            
+            if (!isBassOnset) {
+                var notes = tickGroups[tick];
+                var context = getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC);
+                var prevTick = (i > 0) ? sortedTicks[i - 1] : null;
+                var nextTick = (i < sortedTicks.length - 1) ? sortedTicks[i + 1] : null;
+                
+                notes.forEach(note => {
+                    var isB = (note.staffIdx === bassID.staffIdx && note.voice === bassID.voice);
+                    if (!isB && context.hData.tones.indexOf(note.tpc) === -1) {
+                        // This is a non-chord tone
+                        var prevNote = prevTick ? findNoteInSameVoice(note, tickGroups[prevTick]) : null;
+                        var nextNote = nextTick ? findNoteInSameVoice(note, tickGroups[nextTick]) : null;
+                        
+                        if (!isPassingTone(note, prevNote, nextNote, context.hData)) {
+                            errors.push({ tick: tick, msg: "Invalid\nPassing Tone", note: note });
+                        }
+                    }
+                });
+            }
         }
         return errors;
     }
@@ -166,13 +361,56 @@ MuseScore {
         }
     }
 
+    function addStatisticsFooter(sortedTicks, tickGroups, lastStaff, bassOnsets) {
+        var totalIntervalsChecked = 0;
+        var totalPerfectCount = 0;
+
+        for (var i = 0; i < sortedTicks.length; i++) {
+            var tick = sortedTicks[i];
+            var notesAtTick = tickGroups[tick];
+            if (notesAtTick && notesAtTick.length > 1) {
+                for (var x = 0; x < notesAtTick.length; x++) {
+                    for (var y = x + 1; y < notesAtTick.length; y++) {
+                        var n1 = notesAtTick[x];
+                        var n2 = notesAtTick[y];
+                        var lowNote = (n1.pitch < n2.pitch) ? n1 : n2;
+                        var highNote = (n1.pitch < n2.pitch) ? n2 : n1;
+                        totalIntervalsChecked++;
+                        if (getIntervalType(lowNote, highNote)) {
+                            totalPerfectCount++;
+                        }
+                    }
+                }
+            }
+        }
+
+        var cursor = curScore.newCursor();
+        cursor.rewind(1); 
+        cursor.staffIdx = lastStaff; 
+        
+        if (sortedTicks.length > 0) {
+            while (cursor.segment && cursor.tick < sortedTicks[0]) {
+                cursor.next();
+            }
+        }
+
+        var footer = newElement(Element.STAFF_TEXT);
+        var perfRatio = (totalIntervalsChecked > 0) ? Math.round((totalPerfectCount / totalIntervalsChecked) * 100) : 0;
+        footer.text = "--- SPECIES 2 ANALYSIS ---\nBass Onsets: " + bassOnsets.length + " | Intervals: " + totalIntervalsChecked + " | Perfect: " + perfRatio + "%";
+        footer.color = colorStats;
+        footer.placement = Placement.BELOW;
+        footer.offsetX = -5;
+        cursor.add(footer);
+    }
+
     // --- MAIN RUN ---
 
     onRun: {
         if (!curScore) { quit(); return; }
-        curScore.startCmd("Tonal Species 2 Analysis");
+        curScore.startCmd("Species 2 Counterpoint Analysis");
         if (curScore.selection.elements.length === 0) { cmd("select-all"); }
 
+        // 1. Gather Data
         var tickGroups = {};
         curScore.selection.elements.forEach(el => {
             if (el && el.type === Element.NOTE && el.parent && el.parent.parent) {
@@ -182,52 +420,65 @@ MuseScore {
             }
         });
 
+        var lastStaff = curScore.selection.startStaff;
+        if (curScore.selection.endStaff > lastStaff) {
+            lastStaff = curScore.selection.endStaff - 1; 
+        }
+
         var sortedTicks = Object.keys(tickGroups).map(Number).sort((a,b)=>a-b);
         if (sortedTicks.length === 0) { quit(); return; }
 
+        // 2. Setup Analysis Context
         var tonicTPC = determineTonic(sortedTicks, tickGroups);
-        var lastStaff = curScore.selection.endStaff - 1; 
+        var firstChord = tickGroups[sortedTicks[0]].sort((a,b)=>a.pitch-b.pitch);
+        var voices = firstChord.map(n => ({ staffIdx: n.staffIdx, voice: n.voice }));
+        var bassID = voices[0];
+        var sopID = voices[voices.length - 1];
 
-        // State Variables for Linear Analysis
-        // 3. Determine Context: Bass Onset vs Interior
-        // If a bass note exists at this tick, it's an "Onset"
-        var isBassOnset = (bassNode !== undefined);
+        // 3. Identify Bass Onsets (Species 2 specific)
+        var bassOnsets = identifyBassOnsets(sortedTicks, tickGroups, bassID);
 
-        if (isBassOnset) {
-            activeBass = bassNode; // Update the "current" bass
+        // 4. Check Passing Tones
+        var passingErrors = checkPassingTones(sortedTicks, tickGroups, bassOnsets, tonicTPC, bassID);
+        passingErrors.forEach(err => {
+            err.note.color = colorError;
+            addErrorLabels(err.tick, [err.msg]);
+        });
+
+        // 5. Main Check Loop
+        for (var j = 0; j < sortedTicks.length; j++) {
+            var tick = sortedTicks[j];
+            var notes = tickGroups[tick];
+            var isBassOnset = (bassOnsets.indexOf(tick) !== -1);
             
-            // Strict Downbeat Checks
-            errors = errors.concat(checkBassOnset(notes, hData));
-            
-            // CORRECTED VOICE CROSSING:
-            // Error if Bass (Lower Staff) Pitch > Soprano (Upper Staff) Pitch
-            if (sopNode && activeBass && activeBass.pitch > sopNode.pitch) {
-                errors.push("Voice Crossing");
-                activeBass.color = colorError; 
-                sopNode.color = colorError;
-            }
-        } else {
-            // === INTERIOR NOTE (Bass is sustaining) ===
-            if (sopNode && activeBass) {
-                // Voice crossing check even on interior notes
-                if (activeBass.pitch > sopNode.pitch) {
-                    errors.push("Voice Crossing");
-                    sopNode.color = colorError;
+            // Find next bass onset for voice leading checks
+            var nextBassOnsetTick = null;
+            for (var k = j + 1; k < sortedTicks.length; k++) {
+                if (bassOnsets.indexOf(sortedTicks[k]) !== -1) {
+                    nextBassOnsetTick = sortedTicks[k];
+                    break;
                 }
-
-                // Melodic Function (Passing Tone vs Chord Tone)
-                var nextSop = findNoteInSameVoice(sopNode, nextTickNotes);
-                errors = errors.concat(checkMelodicFunction(prevSop, sopNode, nextSop, hData, activeBass));
             }
+            var nextNotes = nextBassOnsetTick ? tickGroups[nextBassOnsetTick] : null;
 
+            // Get harmony context
+            var context = getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC);
+            var errors = [];
+
+            // Execute checks
+            errors = errors.concat(checkVoiceCrossing(voices, notes));
+            errors = errors.concat(checkTonesAndTendencies(notes, nextNotes, context.rn, context.hData, bassID, sopID, isBassOnset));
+            
+            // Only check perfect intervals at bass onsets
+            errors = errors.concat(checkVoiceLeading(notes, nextNotes, bassID, sopID, isBassOnset));
+
+            // Write results
             addErrorLabels(tick, errors);
-
-            // Update Soprano History
-            if (sopNode) prevSop = sopNode;
         }
 
-        // Add footer stats if desired (omitted for brevity, can copy from previous version)
-        
+        // 6. Final Stats
+        addStatisticsFooter(sortedTicks, tickGroups, lastStaff, bassOnsets);
+
         curScore.endCmd(); 
         quit();
     }
