@@ -236,6 +236,12 @@ MuseScore {
             
             if (isB) return;
             
+            // Check for non-chord tones at bass onsets
+            if (isBassOnset && rn !== "" && hData.tones.indexOf(note.tpc) === -1) {
+                errors.push("Invalid\nNCT");
+                note.color = colorError;
+            }
+            
             // Check for repeated melody notes
             if (nextNotes) {
                 var nN = findNoteInSameVoice(note, nextNotes);
@@ -340,7 +346,7 @@ MuseScore {
                         var nextNote = nextTick ? findNoteInSameVoice(note, tickGroups[nextTick]) : null;
                         
                         if (!isPassingTone(note, prevNote, nextNote, context.hData)) {
-                            errors.push({ tick: tick, msg: "Invalid NCT", note: note });
+                            errors.push({ tick: tick, msg: "Invalid\nNCT", note: note });
                         }
                     }
                 });
