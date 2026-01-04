@@ -50,6 +50,10 @@ MuseScore {
         return null;
     }
 
+    function isChordTone(note, hData) {
+        return hData.tones.some(tpc => (note.tpc - tpc) % 12 === 0);
+    }
+
     function getChordData(rn, tonicTPC) {
         if (!rn || rn === "") return { tones: [], tendTones: [null, null] };
 
@@ -136,40 +140,235 @@ MuseScore {
 
     // --- SPECIES 4 SPECIFIC FUNCTIONS ---
 
-    function isSuspension(i, sortedTicks, tickGroups, bassOnsets, hData, bassID) {
-        if (i === 0 || i >= sortedTicks.length - 1) return false;
-        var tPrev = sortedTicks[i-1], tCurr = sortedTicks[i], tNext = sortedTicks[i+1];
-        var notePrev = tickGroups[tPrev].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-        var noteCurr = tickGroups[tCurr].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-        var noteNext = tickGroups[tNext].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-        if (!notePrev || !noteCurr || !noteNext) return false;
+function isSuspension(i, sortedTicks, tickGroups, bassOnsets, hData, bassID, tonicTPC) {
+    if (i === 0 || i >= sortedTicks.length - 1) return false;
 
-        // Suspension: same note resolves down by step
-        return notePrev.tpc === noteCurr.tpc && noteNext.tpc === noteCurr.tpc - 1;
+    var tPrev = sortedTicks[i-1],
+        tCurr = sortedTicks[i],
+        tNext = sortedTicks[i+1];
+
+    var notesPrev = tickGroups[tPrev] || [];
+    var notesCurr = tickGroups[tCurr] || [];
+    var notesNext = tickGroups[tNext] || [];
+
+    var notePrev = notesPrev.find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    var noteCurr = notesCurr.find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    var noteNext = notesNext.find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+
+    if (!notePrev || !noteCurr || !noteNext) return false;
+
+    // Curr must be on a bass onset
+    if (bassOnsets.indexOf(tCurr) === -1) return false;
+
+    // Curr must be a non-chord tone
+    if (hData.tones.indexOf(noteCurr.tpc) !== -1) return false;
+
+    // Prep: chord tone, not on bass onset
+    var prevContext = getCurrentHarmonyContext(tPrev, bassOnsets, tickGroups, tonicTPC);
+    if (prevContext.hData.tones.indexOf(notePrev.tpc) === -1) return false;
+    if (bassOnsets.indexOf(tPrev) !== -1) return false;
+
+    // Resolution: down step to chord tone, non-bass-onset
+    var step = noteNext.pitch - noteCurr.pitch;
+    if (!(step === -1 || step === -2)) return false;
+    if (hData.tones.indexOf(noteNext.tpc) === -1) return false;
+    if (bassOnsets.indexOf(tNext) !== -1) return false;
+
+    return true;
+}
+
+
+function isRetardation(i, sortedTicks, tickGroups, bassOnsets, hData, bassID, tonicTPC) {
+    if (i === 0 || i >= sortedTicks.length - 1) return false;
+
+    var tPrev = sortedTicks[i-1],
+        tCurr = sortedTicks[i],
+        tNext = sortedTicks[i+1];
+
+    var notesPrev = tickGroups[tPrev] || [];
+    var notesCurr = tickGroups[tCurr] || [];
+    var notesNext = tickGroups[tNext] || [];
+
+    var notePrev = notesPrev.find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    var noteCurr = notesCurr.find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    var noteNext = notesNext.find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+
+    if (!notePrev || !noteCurr || !noteNext) return false;
+
+    if (bassOnsets.indexOf(tCurr) === -1) return false;
+
+    // Must be tied
+    if (!noteCurr.tieBack) return false;
+
+    // Prep: same note, chord tone
+    if (notePrev.pitch !== noteCurr.pitch || notePrev.tpc !== noteCurr.tpc) return false;
+    var prevContext = getCurrentHarmonyContext(tPrev, bassOnsets, tickGroups, tonicTPC);
+    if (prevContext.hData.tones.indexOf(notePrev.tpc) === -1) return false;
+
+    // Curr: non-chord tone
+    if (hData.tones.indexOf(noteCurr.tpc) !== -1) return false;
+
+    // Resolution: up step to chord tone
+    var step = noteNext.pitch - noteCurr.pitch;
+    if (!(step === 1 || step === 2)) return false;
+    if (hData.tones.indexOf(noteNext.tpc) === -1) return false;
+
+    return true;
+}
+
+
+function getSuspensionNCT(i, sortedTicks, tickGroups, bassOnsets, hData, bassID, tonicTPC) {
+    if (i === 0 || i >= sortedTicks.length - 1) return null;
+
+    var tPrev = sortedTicks[i-1],
+        tCurr = sortedTicks[i],
+        tNext = sortedTicks[i+1];
+
+    var notePrev = tickGroups[tPrev].find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    var noteCurr = tickGroups[tCurr].find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    var noteNext = tickGroups[tNext].find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    if (!notePrev || !noteCurr || !noteNext) return null;
+
+    // Curr must be on a bass onset and a NCT
+    if (bassOnsets.indexOf(tCurr) === -1) return null;
+    if (hData.tones.indexOf(noteCurr.tpc) !== -1) return null;
+
+    // Prep must be a CT not on bass onset
+    var prevContext = getCurrentHarmonyContext(tPrev, bassOnsets, tickGroups, tonicTPC);
+    if (prevContext.hData.tones.indexOf(notePrev.tpc) === -1) return null;
+    if (bassOnsets.indexOf(tPrev) !== -1) return null;
+
+    // Resolution: step down to CT, not on bass onset
+    var step = noteNext.pitch - noteCurr.pitch;
+    if (!(step === -1 || step === -2)) return null;
+    if (hData.tones.indexOf(noteNext.tpc) === -1) return null;
+    if (bassOnsets.indexOf(tNext) !== -1) return null;
+
+    return { note: noteCurr, type: "Suspension" };
+}
+
+function getRetardationNCT(i, sortedTicks, tickGroups, bassOnsets, hData, bassID, tonicTPC) {
+    if (i === 0 || i >= sortedTicks.length - 1) return null;
+
+    var tPrev = sortedTicks[i-1],
+        tCurr = sortedTicks[i],
+        tNext = sortedTicks[i+1];
+
+    var notePrev = tickGroups[tPrev].find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    var noteCurr = tickGroups[tCurr].find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    var noteNext = tickGroups[tNext].find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    if (!notePrev || !noteCurr || !noteNext) return null;
+
+    if (bassOnsets.indexOf(tCurr) === -1) return null;
+    if (!noteCurr.tieBack) return null;  // must be tied from previous
+
+    if (notePrev.pitch !== noteCurr.pitch || notePrev.tpc !== noteCurr.tpc) return null;
+
+    var prevContext = getCurrentHarmonyContext(tPrev, bassOnsets, tickGroups, tonicTPC);
+    if (prevContext.hData.tones.indexOf(notePrev.tpc) === -1) return null;
+
+    if (hData.tones.indexOf(noteCurr.tpc) !== -1) return null;
+
+    var step = noteNext.pitch - noteCurr.pitch;
+    if (!(step === 1 || step === 2)) return null;
+    if (hData.tones.indexOf(noteNext.tpc) === -1) return null;
+
+    return { note: noteCurr, type: "Retardation" };
+}
+
+function getAppoggiatureNCT(i, sortedTicks, tickGroups, bassOnsets, hData, bassID) {
+    if (i >= sortedTicks.length - 1) return null;
+
+    var tick = sortedTicks[i];
+    if (bassOnsets.indexOf(tick) === -1) return null; // Must be accented
+
+    var tNext = sortedTicks[i + 1];
+
+    var notesAtTick = tickGroups[tick] || [];
+    var noteCurr = notesAtTick.find(n => n && !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
+    if (!noteCurr) return null;
+
+    var notesAtNextTick = tickGroups[tNext] || [];
+    var noteNext = notesAtNextTick.find(n => n && n.staffIdx === noteCurr.staffIdx && n.voice === noteCurr.voice);
+    if (!noteNext) return null;
+
+    // Must be non-chord → chord tone
+    if (hData.tones.indexOf(noteCurr.tpc) !== -1) return null;
+    if (hData.tones.indexOf(noteNext.tpc) === -1) return null;
+
+    var pitchDiff = noteNext.pitch - noteCurr.pitch;
+    if (pitchDiff !== -1 && pitchDiff !== -2) return null; // Resolve down by step
+
+    return noteCurr;
+}
+
+
+
+function getSuspensionNoteIndex(j, sortedTicks, tickGroups, bassOnsets, hData, bassID, tonicTPC) {
+    if (isSuspension(j, sortedTicks, tickGroups, bassOnsets, hData, bassID, tonicTPC)) {
+        var tCurr = sortedTicks[j];
+        return tickGroups[tCurr].findIndex(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
     }
+    return -1;
+}
 
-    function isRetardation(i, sortedTicks, tickGroups, bassOnsets, hData, bassID) {
-        if (i === 0 || i >= sortedTicks.length - 1) return false;
-        var tPrev = sortedTicks[i-1], tCurr = sortedTicks[i], tNext = sortedTicks[i+1];
-        var notePrev = tickGroups[tPrev].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-        var noteCurr = tickGroups[tCurr].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-        var noteNext = tickGroups[tNext].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-        if (!notePrev || !noteCurr || !noteNext) return false;
-
-        // Retardation: same note resolves UP by half-step
-        return notePrev.tpc === noteCurr.tpc && noteNext.tpc === noteCurr.tpc + 1;
+function getRetardationNoteIndex(j, sortedTicks, tickGroups, bassOnsets, hData, bassID, tonicTPC) {
+    if (isRetardation(j, sortedTicks, tickGroups, bassOnsets, hData, bassID, tonicTPC)) {
+        var tCurr = sortedTicks[j];
+        return tickGroups[tCurr].findIndex(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
     }
+    return -1;
+}
 
-    function isAppoggiatura(i, sortedTicks, tickGroups, bassOnsets, hData, bassID) {
-        if (i >= sortedTicks.length - 1) return false;
-        var tCurr = sortedTicks[i], tNext = sortedTicks[i+1];
-        var noteCurr = tickGroups[tCurr].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-        var noteNext = tickGroups[tNext].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-        if (!noteCurr || !noteNext) return false;
-
-        // Appoggiatura: non-chord tone approaches a chord tone by step
-        return hData.tones.indexOf(noteNext.tpc) !== -1 && Math.abs(noteCurr.tpc - noteNext.tpc) <= 2;
+function getAppoggiaturaNoteIndex(j, sortedTicks, tickGroups, bassOnsets, hData, bassID) {
+    if (isAppoggiatura(j, sortedTicks, tickGroups, bassOnsets, hData, bassID)) {
+        var tCurr = sortedTicks[j];
+        return tickGroups[tCurr].findIndex(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
     }
+    return -1;
+}
+
+
+function isAppoggiatura(i, sortedTicks, tickGroups, bassOnsets, hData, bassID) {
+    if (i >= sortedTicks.length - 1) return false;
+
+    var tick = sortedTicks[i];
+    if (bassOnsets.indexOf(tick) === -1) return false; // Must be accented
+
+    var tNext = sortedTicks[i + 1];
+
+    var noteCurr = tickGroups[tick]?.find(n =>
+        !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice)
+    );
+    if (!noteCurr) return false;
+
+    var noteNext = tickGroups[tNext]?.find(n =>
+        n.staffIdx === noteCurr.staffIdx && n.voice === noteCurr.voice
+    );
+    if (!noteNext) return false;
+
+    // Must be non-chord tone → chord tone
+    if (hData.tones.indexOf(noteCurr.tpc) !== -1) return false;
+    if (hData.tones.indexOf(noteNext.tpc) === -1) return false;
+
+    // Must resolve DOWN by step
+    var step = noteNext.pitch - noteCurr.pitch;
+    if (step !== -1 && step !== -2) return false;
+
+    // Check that the preceding note exists and leaps into this NCT
+    var prevTick = (i > 0) ? sortedTicks[i - 1] : null;
+    if (!prevTick) return false;
+    var notePrev = tickGroups[prevTick]?.find(n =>
+        n.staffIdx === noteCurr.staffIdx && n.voice === noteCurr.voice
+    );
+    if (!notePrev) return false;
+
+    var leap = Math.abs(noteCurr.pitch - notePrev.pitch);
+    if (leap <= 2) return false; // must be more than a step to count as a leap
+
+    return true;
+}
+
 
 
     // --- SPECIES 3 SPECIFIC FUNCTIONS ---
@@ -219,7 +418,7 @@ MuseScore {
 
     function isPassingOrNeighborTone(note, prevNote, nextNote, hData) {
         if (!prevNote || !nextNote) return false;
-        if (hData.tones.indexOf(note.tpc) !== -1) return true;
+        if (isChordTone(note, hData)) return true;
         var stepToPrev = Math.abs(note.pitch - prevNote.pitch);
         var stepToNext = Math.abs(note.pitch - nextNote.pitch);
         if (stepToPrev > 2 || stepToNext > 2) return false;
@@ -313,7 +512,7 @@ MuseScore {
             }
             if (nextNotes) {
                 var nN = findNoteInSameVoice(note, nextNotes);
-                if (nN && nN.pitch === note.pitch && nN.tpc === note.tpc) {
+                if (nN && !nN.tieBack && nN.pitch === note.pitch && nN.tpc === note.tpc) {
                     errors.push("Repeated\nMelody Note");
                     note.color = colorError;
                     nN.color = colorError;
@@ -423,130 +622,160 @@ MuseScore {
         cursor.rewind(1); cursor.staffIdx = lastStaff; 
         var perfRatio = (totalIntervalsChecked > 0) ? Math.round((totalPerfectCount / totalIntervalsChecked) * 100) : 0;
         var footer = newElement(Element.STAFF_TEXT);
-        footer.text = "--- SPECIES 3 ANALYSIS ---\nBass Onsets: " + bassOnsets.length + " | Perfect: " + perfRatio + "%\nDouble Neighbors: " + countDN + " | Cambiatas: " + countCambiata;
+        footer.text = "--- SPECIES 4 ANALYSIS ---\nBass Onsets: " + bassOnsets.length + " | Perfect: " + perfRatio + "%\nDouble Neighbors: " + countDN + " | Cambiatas: " + countCambiata;
         footer.text += " | Suspensions: " + countSusp + " | Retardations: " + countRet + " | Appoggiaturas: " + countApp;
         footer.color = colorStats; footer.placement = Placement.BELOW;
         cursor.add(footer);
     }
 
-    // --- MAIN RUN ---
+// --- MAIN RUN ---
+onRun: {
+    if (!curScore) { quit(); return; }
+    curScore.startCmd("Species 4 Counterpoint Analysis");
 
-    onRun: {
-        if (!curScore) { quit(); return; }
-        curScore.startCmd("Species 3 Counterpoint Analysis");
-        if (curScore.selection.elements.length === 0) { cmd("select-all"); }
+    // Select all if nothing is selected
+    if (curScore.selection.elements.length === 0) { cmd("select-all"); }
 
-        var tickGroups = {};
-        curScore.selection.elements.forEach(el => {
-            if (el && el.type === Element.NOTE && el.parent && el.parent.parent) {
-                var tick = el.parent.parent.tick;
-                if (!tickGroups[tick]) tickGroups[tick] = [];
-                tickGroups[tick].push(el);
+    // --- Build tick groups ---
+    var tickGroups = {};
+    curScore.selection.elements.forEach(el => {
+        if (el && el.type === Element.NOTE && el.parent && el.parent.parent) {
+            var tick = el.parent.parent.tick;
+            if (!tickGroups[tick]) tickGroups[tick] = [];
+            tickGroups[tick].push(el);
+        }
+    });
+
+    var sortedTicks = Object.keys(tickGroups).map(Number).sort((a,b)=>a-b);
+    if (sortedTicks.length === 0) { quit(); return; }
+
+    // --- Determine lastStaff for footer placement ---
+    var lastStaff = curScore.selection.startStaff;
+    if (curScore.selection.endStaff > lastStaff) { lastStaff = curScore.selection.endStaff - 1; }
+
+    // --- Identify tonic, bass, and melody voice ---
+    var tonicTPC = determineTonic(sortedTicks, tickGroups);
+    var firstChord = tickGroups[sortedTicks[0]].sort((a,b)=>a.pitch-b.pitch);
+    var voices = firstChord.map(n => ({ staffIdx: n.staffIdx, voice: n.voice }));
+    var bassID = voices[0];
+
+    // Melody = highest voice with a note on second bass onset (in case first tick is a rest)
+    var bassOnsets = identifyBassOnsets(sortedTicks, tickGroups, bassID);
+    var secondBassTick = bassOnsets.length > 1 ? bassOnsets[1] : bassOnsets[0];
+    var melodyNote = tickGroups[secondBassTick].filter(n => n.staffIdx !== bassID.staffIdx).sort((a,b)=>b.pitch-a.pitch)[0];
+    var melodyID = { staffIdx: melodyNote.staffIdx, voice: melodyNote.voice };
+    var sopID = melodyID;
+
+    // --- Pattern counts ---
+    var countDN = 0, countCambiata = 0, countSusp = 0, countRet = 0, countApp = 0;
+
+    // --- Main tick loop ---
+    for (var j = 0; j < sortedTicks.length; j++) {
+        var tick = sortedTicks[j];
+        var notes = tickGroups[tick];
+
+        var isBassOnset = (bassOnsets.indexOf(tick) !== -1);
+        var context = getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC);
+
+        // --- Pattern detection ---
+        if (isDoubleNeighbor(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID)) {
+            for (var k = 1; k <= 2; k++) {
+                var dnNote = tickGroups[sortedTicks[j+k]].find(n => n.staffIdx === melodyID.staffIdx && n.voice === melodyID.voice);
+                if (dnNote) dnNote.color = colorPattern;
             }
-        });
-
-        var lastStaff = curScore.selection.startStaff;
-        if (curScore.selection.endStaff > lastStaff) { lastStaff = curScore.selection.endStaff - 1; }
-        var sortedTicks = Object.keys(tickGroups).map(Number).sort((a,b)=>a-b);
-        if (sortedTicks.length === 0) { quit(); return; }
-
-        var tonicTPC = determineTonic(sortedTicks, tickGroups);
-        var firstChord = tickGroups[sortedTicks[0]].sort((a,b)=>a.pitch-b.pitch);
-        var voices = firstChord.map(n => ({ staffIdx: n.staffIdx, voice: n.voice }));
-        var bassID = voices[0];
-        var sopID = voices[voices.length - 1];
-        var bassOnsets = identifyBassOnsets(sortedTicks, tickGroups, bassID);
-
-        var countDN = 0;
-        var countCambiata = 0;
-        var countSusp = 0, countRet = 0, countApp = 0;
-
-        for (var j = 0; j < sortedTicks.length; j++) {
-            var tick = sortedTicks[j];
-            var notes = tickGroups[tick];
-            var isBassOnset = (bassOnsets.indexOf(tick) !== -1);
-            var context = getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC);
-
-            // Pattern Pattern Detection (Stats + Coloring)
-            if (isDoubleNeighbor(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID)) {
-                markPatternNotes(j, 4, sortedTicks, tickGroups, bassID, colorPattern);
-                countDN++;
-            }
-            if (isNotaCambiata(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID)) {
-                markPatternNotes(j, 4, sortedTicks, tickGroups, bassID, colorPattern);
-                countCambiata++;
-            }
-            var patternNote = tickGroups[sortedTicks[j]].find(n => !(n.staffIdx === bassID.staffIdx && n.voice === bassID.voice));
-
-            if (patternNote) {
-                if (isSuspension(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID)) {
-                    patternNote.color = colorPattern;
-                    countSusp++;
-                }
-                if (isRetardation(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID)) {
-                    patternNote.color = colorPattern;
-                    countRet++;
-                }
-                if (isAppoggiatura(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID)) {
-                    patternNote.color = colorPattern;
-                    countApp++;
-                }
-            }
-
-
-            var errors = [];
-            errors = errors.concat(checkVoiceCrossing(voices, notes));
-            
-            // Check for NCTs specifically
-            notes.forEach(note => {
-                if (note.staffIdx === bassID.staffIdx) return;
-                var isCT = context.hData.tones.indexOf(note.tpc) !== -1;
-                
-                if (!isCT) {
-                    var prevNote = (j > 0) ? findNoteInSameVoice(note, tickGroups[sortedTicks[j-1]]) : null;
-                    var nextNote = (j < sortedTicks.length - 1) ? findNoteInSameVoice(note, tickGroups[sortedTicks[j+1]]) : null;
-                    
-                    var isStandardNCT = isPassingOrNeighborTone(note, prevNote, nextNote, context.hData);
-                    var isPartOfPattern = false;
-                    for (var lb = 1; lb <= 2; lb++) {
-                        if (j >= lb && (isDoubleNeighbor(j-lb, sortedTicks, tickGroups, bassOnsets, context.hData, bassID) || 
-                                       isNotaCambiata(j-lb, sortedTicks, tickGroups, bassOnsets, context.hData, bassID))) {
-                            isPartOfPattern = true;
-                            note.color = colorPattern;
-                        }
-                    }
-                    var isValidNCT = isStandardNCT || isPartOfPattern ||
-                        isAccentedPassingOrNeighbor(note, prevNote, nextNote, context.hData, tick, bassOnsets) ||
-                        isSuspension(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID) ||
-                        isRetardation(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID) ||
-                        isAppoggiatura(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID);
-
-                    if (!isValidNCT) {
-                        errors.push("Invalid\nNCT");
-                        note.color = colorError;
-                    }
-                }
-            });
-
-            // Standard species checks
-            var nextTick = (j + 1 < sortedTicks.length) ? sortedTicks[j + 1] : null;
-            var nextTickNotes = nextTick ? tickGroups[nextTick] : null;
-            var nextTickIsBassOnset = nextTick ? (bassOnsets.indexOf(nextTick) !== -1) : false;
-            
-            var nextBassOnsetTick = null;
-            for (var k = j + 1; k < sortedTicks.length; k++) {
-                if (bassOnsets.indexOf(sortedTicks[k]) !== -1) { nextBassOnsetTick = sortedTicks[k]; break; }
-            }
-            var nextBassOnsetNotes = nextBassOnsetTick ? tickGroups[nextBassOnsetTick] : null;
-
-            errors = errors.concat(checkTonesAndTendencies(notes, nextTickNotes, context.rn, context.hData, bassID, sopID, isBassOnset, nextTickIsBassOnset));
-            errors = errors.concat(checkVoiceLeading(notes, nextBassOnsetNotes, bassID, sopID, true));
-
-            addErrorLabels(tick, errors);
+            countDN++;
         }
 
-        addStatisticsFooter(sortedTicks, tickGroups, lastStaff, bassOnsets, countDN, countCambiata, countSusp, countRet, countApp);
-        curScore.endCmd(); 
-        quit();
+        if (isNotaCambiata(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID)) {
+            for (var k = 1; k <= 2; k++) {
+                var cNote = tickGroups[sortedTicks[j+k]].find(n => n.staffIdx === melodyID.staffIdx && n.voice === melodyID.voice);
+                if (cNote) cNote.color = colorPattern;
+            }
+            countCambiata++;
+        }
+
+        // --- Species 4 checks for melody ---
+        var melodyNoteHere = notes.find(n => n.staffIdx === melodyID.staffIdx && n.voice === melodyID.voice);
+        if (melodyNoteHere) {
+            if (isSuspension(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID, tonicTPC)) {
+                melodyNoteHere.color = colorPattern;
+                countSusp++;
+            }
+            if (isRetardation(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID, tonicTPC)) {
+                melodyNoteHere.color = colorPattern;
+                countRet++;
+            }
+            if (isAppoggiatura(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID)) {
+                melodyNoteHere.color = colorPattern;
+                countApp++;
+            }
+        }
+
+        // --- Error collection ---
+        var errors = [];
+        errors = errors.concat(checkVoiceCrossing(voices, notes));
+
+        // Non-chord tone checks only on melody
+        if (melodyNoteHere) {
+            var isCT = context.hData.tones.indexOf(melodyNoteHere.tpc) !== -1;
+
+            if (!isCT) {
+                var prevNote = (j > 0) ? findNoteInSameVoice(melodyNoteHere, tickGroups[sortedTicks[j-1]]) : null;
+                var nextNote = (j < sortedTicks.length - 1) ? findNoteInSameVoice(melodyNoteHere, tickGroups[sortedTicks[j+1]]) : null;
+
+                var isStandardNCT = isPassingOrNeighborTone(melodyNoteHere, prevNote, nextNote, context.hData);
+                var isPartOfPattern = false;
+                for (var lb = 1; lb <= 2; lb++) {
+                    if (j >= lb && (isDoubleNeighbor(j-lb, sortedTicks, tickGroups, bassOnsets, context.hData, bassID) || 
+                                   isNotaCambiata(j-lb, sortedTicks, tickGroups, bassOnsets, context.hData, bassID))) {
+                        isPartOfPattern = true;
+                        melodyNoteHere.color = colorPattern;
+                    }
+                }
+
+                var isValidNCT = isStandardNCT || isPartOfPattern ||
+                    isAccentedPassingOrNeighbor(melodyNoteHere, prevNote, nextNote, context.hData, tick, bassOnsets) ||
+                    isSuspension(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID, tonicTPC) ||
+                    isRetardation(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID, tonicTPC) ||
+                    isAppoggiatura(j, sortedTicks, tickGroups, bassOnsets, context.hData, bassID, tonicTPC);
+
+                if (!isValidNCT) {
+                    errors.push("Invalid\nNCT");
+                    melodyNoteHere.color = colorError;
+                }
+            }
+        }
+
+        // --- Standard species checks ---
+        var nextTick = (j + 1 < sortedTicks.length) ? sortedTicks[j + 1] : null;
+        var nextTickNotes = nextTick ? tickGroups[nextTick] : null;
+        var nextTickIsBassOnset = nextTick ? (bassOnsets.indexOf(nextTick) !== -1) : false;
+
+        var nextBassOnsetTick = null;
+        for (var k = j + 1; k < sortedTicks.length; k++) {
+            if (bassOnsets.indexOf(sortedTicks[k]) !== -1) { nextBassOnsetTick = sortedTicks[k]; break; }
+        }
+        var nextBassOnsetNotes = nextBassOnsetTick ? tickGroups[nextBassOnsetTick] : null;
+
+        errors = errors.concat(checkTonesAndTendencies(notes, nextTickNotes, context.rn, context.hData, bassID, sopID, isBassOnset, nextTickIsBassOnset));
+        errors = errors.concat(checkVoiceLeading(notes, nextBassOnsetNotes, bassID, sopID, true));
+
+        addErrorLabels(tick, errors);
     }
+
+    addStatisticsFooter(sortedTicks, tickGroups, lastStaff, bassOnsets, countDN, countCambiata, countSusp, countRet, countApp);
+
+    curScore.endCmd(); 
+    quit();
+}
+
+
+
+
+
+
+
+
+
+
 }
