@@ -1,0 +1,98 @@
+--- species3.qml
++++ species4.qml
+@@ -6,8 +6,8 @@
+ MuseScore {
+-    title: "Tonal Counterpoint Species 3 Checker"
+-    description: "Checks two-part species 3 counterpoint with passing, neighbor, double neighbor, and cambiata patterns"
++    title: "Tonal Counterpoint Species 4 Checker"
++    description: "Checks two-part species 4 counterpoint with suspensions, retardations, appoggiaturas, and species 3 idioms"
+     version: "1.2"
+     categoryCode: "Proofreading"
+     requiresScore: true
+@@
+     function isPassingOrNeighborTone(note, prevNote, nextNote, hData) {
+         if (!prevNote || !nextNote) return false;
+         if (hData.tones.indexOf(note.tpc) !== -1) return true;
+@@
+         return false;
+     }
++
++    // --- SPECIES 4 IDIOMS ---
++
++    function isSuspensionOrRetardation(note, prevNote, nextNote, hData) {
++        if (!prevNote || !nextNote) return { ok: false };
++
++        // Must be tied / repeated from previous
++        if (note.pitch !== prevNote.pitch || note.tpc !== prevNote.tpc) return { ok: false };
++
++        // Must be dissonant against harmony
++        if (hData.tones.indexOf(note.tpc) !== -1) return { ok: false };
++
++        var resolution = nextNote.pitch - note.pitch;
++        var absRes = Math.abs(resolution);
++
++        // Stepwise resolution only
++        if (absRes !== 1 && absRes !== 2) return { ok: false };
++
++        if (resolution < 0) return { ok: true, type: "Suspension" };
++        if (resolution > 0) return { ok: true, type: "Retardation" };
++
++        return { ok: false };
++    }
++
++    function isAppoggiatura(note, prevNote, nextNote, hData) {
++        if (!prevNote || !nextNote) return false;
++
++        // Must be dissonant
++        if (hData.tones.indexOf(note.tpc) !== -1) return false;
++
++        // Must be approached by leap
++        if (Math.abs(note.pitch - prevNote.pitch) <= 2) return false;
++
++        // Must resolve by step
++        if (Math.abs(nextNote.pitch - note.pitch) > 2) return false;
++
++        return true;
++    }
+@@
+             // Check for NCTs specifically
+             notes.forEach(note => {
+                 if (note.staffIdx === bassID.staffIdx) return;
+                 var isCT = context.hData.tones.indexOf(note.tpc) !== -1;
+                 
+                 if (!isCT) {
+                     var prevNote = (j > 0) ? findNoteInSameVoice(note, tickGroups[sortedTicks[j-1]]) : null;
+                     var nextNote = (j < sortedTicks.length - 1) ? findNoteInSameVoice(note, tickGroups[sortedTicks[j+1]]) : null;
+                     
+                     var isStandardNCT = isPassingOrNeighborTone(note, prevNote, nextNote, context.hData);
++                    var suspData = isSuspensionOrRetardation(note, prevNote, nextNote, context.hData);
++                    var isAppog = isAppoggiatura(note, prevNote, nextNote, context.hData);
+                     var isPartOfPattern = false;
+                     for (var lb = 1; lb <= 2; lb++) {
+                         if (j >= lb && (isDoubleNeighbor(j-lb, sortedTicks, tickGroups, bassOnsets, context.hData, bassID) || 
+                                        isNotaCambiata(j-lb, sortedTicks, tickGroups, bassOnsets, context.hData, bassID))) {
+                             isPartOfPattern = true;
+                             note.color = colorPattern;
+                         }
+                     }
+-                    if (!isStandardNCT && !isPartOfPattern) {
++                    if (suspData.ok) {
++                        note.color = colorPattern;
++                    }
++                    else if (isAppog) {
++                        note.color = colorPattern;
++                    }
++                    else if (!isStandardNCT && !isPartOfPattern) {
+                         errors.push("Invalid\nNCT");
+                         note.color = colorError;
+                     }
+                 }
+             });
+@@
+     function addStatisticsFooter(sortedTicks, tickGroups, lastStaff, bassOnsets, countDN, countCambiata) {
+@@
+-        footer.text = "--- SPECIES 3 ANALYSIS ---\nBass Onsets: " + bassOnsets.length + " | Perfect: " + perfRatio + "%\nDouble Neighbors: " + countDN + " | Cambiatas: " + countCambiata;
++        footer.text = "--- SPECIES 4 ANALYSIS ---\nBass Onsets: " + bassOnsets.length + " | Perfect: " + perfRatio + "%\nDouble Neighbors: " + countDN + " | Cambiatas: " + countCambiata;
+         footer.color = colorStats; footer.placement = Placement.BELOW;
+         cursor.add(footer);
+     }
