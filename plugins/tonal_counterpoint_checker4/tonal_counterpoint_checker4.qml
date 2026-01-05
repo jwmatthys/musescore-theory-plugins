@@ -229,20 +229,6 @@ MuseScore {
             var isFirst = (i === 0);
             var isLast = (i === analysis.length - 1);
             
-            // DEBUG: Show interval info
-            var debugCursor = curScore.newCursor();
-            debugCursor.rewindToTick(analysis[i].tick);
-            var debugText = newElement(Element.STAFF_TEXT);
-            var bassName = analysis[i].bassNote ? Helpers.tpcToName(analysis[i].bassNote.tpc) : "null";
-            var sopName = analysis[i].sopNote ? Helpers.tpcToName(analysis[i].sopNote.tpc) : "null";
-            debugText.text = "B:" + bassName + " S:" + sopName + 
-                           "\nInt: " + (analysis[i].intervalType ? analysis[i].intervalType : "other") + 
-                           "\n" + (analysis[i].isBassOnset ? "Bass" : "Offbeat") +
-                           "\nTick: " + analysis[i].tick;
-            debugText.color = "#0000ff";
-            debugText.placement = Placement.ABOVE;
-            debugCursor.add(debugText);
-            
             var nextBassOnsetIdx = -1;
             for (var j = i + 1; j < analysis.length; j++) {
                 if (analysis[j].isBassOnset) {

@@ -293,53 +293,46 @@ function checkTickErrors(ana, analysis, voices, bassID, sopID, isFirst, isLast, 
                 var direct = checkDirectPerfect(noteAna1, noteAna2, bassID, sopID);
                 if (direct) errors.push(direct);
             }
+        }
+    }
+    
+    // Check from offbeat to next offbeat (2 ticks ahead) - OUTSIDE the note pair loop
+    if (!ana.isBassOnset && ana.tickIdx + 2 < analysis.length) {
+        var nextOffbeatIdx = ana.tickIdx + 2;
+        var nextOffbeatAna = analysis[nextOffbeatIdx];
+        
+        if (!nextOffbeatAna.isBassOnset) {
+            var currentInterval = ana.intervalType;
+            var nextInterval = nextOffbeatAna.intervalType;
             
-            // Check from offbeat to next offbeat (2 ticks ahead)
-            if (!ana.isBassOnset && ana.tickIdx + 2 < analysis.length) {
-                var nextOffbeatIdx = ana.tickIdx + 2;
-                var nextOffbeatAna = analysis[nextOffbeatIdx];
+            // Parallel perfects
+            if (currentInterval && currentInterval === nextInterval) {
+                // Find the notes at both offbeats
+                var bassNow = ana.bassNote;
+                var sopNow = ana.sopNote;
+                var bassNext = nextOffbeatAna.bassNote;
+                var sopNext = nextOffbeatAna.sopNote;
                 
-                if (!nextOffbeatAna.isBassOnset) {
-                    var currentInterval = ana.intervalType;
-                    var nextInterval = nextOffbeatAna.intervalType;
-                    
-                    // Parallel perfects
-                    if (currentInterval && currentInterval === nextInterval) {
-                        var n1 = noteAna1.note, n2 = noteAna2.note;
-                        var nN1 = Helpers.findNoteInSameVoice(n1, nextOffbeatAna.notes);
-                        var nN2 = Helpers.findNoteInSameVoice(n2, nextOffbeatAna.notes);
-                        
-                        if (nN1 && nN2 && nN1.pitch !== n1.pitch) {
-                            n1.color = colorError; n2.color = colorError;
-                            nN1.color = colorError; nN2.color = colorError;
-                            errors.push("Parallel " + currentInterval);
-                        }
-                    }
-                    
-                    // Direct perfects
-                    if (!currentInterval && nextInterval) {
-                        var n1 = noteAna1.note, n2 = noteAna2.note;
-                        var nN1 = Helpers.findNoteInSameVoice(n1, nextOffbeatAna.notes);
-                        var nN2 = Helpers.findNoteInSameVoice(n2, nextOffbeatAna.notes);
-                        
-                        if (nN1 && nN2) {
-                            var lC = (n1.pitch < n2.pitch) ? n1 : n2;
-                            var hC = (n1.pitch < n2.pitch) ? n2 : n1;
-                            var lN = (nN1.pitch < nN2.pitch) ? nN1 : nN2;
-                            var hN = (nN1.pitch < nN2.pitch) ? nN2 : nN1;
-                            
-                            var isBass = (lC.staffIdx === bassID.staffIdx && lC.voice === bassID.voice);
-                            var isSop = (hC.staffIdx === sopID.staffIdx && hC.voice === sopID.voice);
-                            
-                            if (isBass && isSop) {
-                                var bM = lN.pitch - lC.pitch;
-                                var sM = hN.pitch - hC.pitch;
-                                if ((bM * sM > 0) && Math.abs(sM) > 2) {
-                                    hN.color = colorError;
-                                    errors.push("Direct " + nextInterval);
-                                }
-                            }
-                        }
+                if (bassNow && sopNow && bassNext && sopNext && sopNow.pitch !== sopNext.pitch) {
+                    bassNow.color = colorError; sopNow.color = colorError;
+                    bassNext.color = colorError; sopNext.color = colorError;
+                    errors.push("Parallel " + currentInterval);
+                }
+            }
+            
+            // Direct perfects
+            if (!currentInterval && nextInterval) {
+                var bassNow = ana.bassNote;
+                var sopNow = ana.sopNote;
+                var bassNext = nextOffbeatAna.bassNote;
+                var sopNext = nextOffbeatAna.sopNote;
+                
+                if (bassNow && sopNow && bassNext && sopNext) {
+                    var bM = bassNext.pitch - bassNow.pitch;
+                    var sM = sopNext.pitch - sopNow.pitch;
+                    if ((bM * sM > 0) && Math.abs(sM) > 2) {
+                        sopNext.color = colorError;
+                        errors.push("Direct " + nextInterval);
                     }
                 }
             }
