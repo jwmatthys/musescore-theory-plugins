@@ -15,7 +15,7 @@ MuseScore {
     readonly property string colorError: "#b30000" 
     readonly property string colorStats: "#004a99"
 
-    function createTickAnalysis(sortedTicks, tickGroups, bassOnsets, tonicTPC, bassID, sopID) {
+    function createTickAnalysis(sortedTicks, tickGroups, bassOnsets, tonicTPC, mode, bassID, sopID) {
         var analysis = [];
         
         // Pass 1: Create basic tick analysis
@@ -23,7 +23,7 @@ MuseScore {
             var tick = sortedTicks[i];
             var notes = tickGroups[tick];
             var isBassOnset = (bassOnsets.indexOf(tick) !== -1);
-            var context = Harmony.getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC, curScore, Element);
+            var context = Harmony.getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC, mode, curScore, Element);
             
             analysis.push({
                 tick: tick,
@@ -141,12 +141,13 @@ MuseScore {
         var bassID = voices[0];
         var sopID = voices[voices.length - 1];
         
-        // Determine tonic and bass onsets
+        // Determine tonic, mode, and bass onsets
         var tonicTPC = Harmony.determineTonic(sortedTicks, tickGroups, curScore, Element);
+        var mode = Harmony.determineMode(sortedTicks, curScore, Element);
         var bassOnsets = Helpers.identifyBassOnsets(sortedTicks, tickGroups, bassID);
 
         // Analyze all ticks
-        var analysis = createTickAnalysis(sortedTicks, tickGroups, bassOnsets, tonicTPC, bassID, sopID);
+        var analysis = createTickAnalysis(sortedTicks, tickGroups, bassOnsets, tonicTPC, mode, bassID, sopID);
 
         // Check for errors
         for (var i = 0; i < analysis.length; i++) {
