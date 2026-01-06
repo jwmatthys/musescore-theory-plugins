@@ -24,7 +24,7 @@ MuseScore {
             return null;
         }
         
-        // Check if this is keyboard style (3 notes in one staff, 1 in another)
+        // Check staff distribution
         var staffCounts = {};
         sorted.forEach(function(n) {
             if (!staffCounts[n.staffIdx]) staffCounts[n.staffIdx] = [];
@@ -32,24 +32,51 @@ MuseScore {
         });
         
         var staffKeys = Object.keys(staffCounts).sort(function(a,b) { return a - b; });
-        var isKeyboardStyle = (staffKeys.length === 2 && 
-                               staffCounts[staffKeys[0]].length === 3 && 
-                               staffCounts[staffKeys[1]].length === 1);
         
-        // For keyboard style, we track by staff only (not voice) for the upper staff
-        // and assign S/A/T by pitch order within that staff
+        // Keyboard style: 3 notes in upper staff, 1 in lower (SAT/B)
+        // Also check that the 3 notes share the same voice
+        var isKeyboardStyle = false;
+        if (staffKeys.length === 2 && 
+            staffCounts[staffKeys[0]].length === 3 && 
+            staffCounts[staffKeys[1]].length === 1) {
+            var upperNotes = staffCounts[staffKeys[0]];
+            var sameVoice = (upperNotes[0].voice === upperNotes[1].voice && 
+                            upperNotes[1].voice === upperNotes[2].voice);
+            isKeyboardStyle = sameVoice;
+        }
+        
+        // Choral style: 2 notes in each staff, AND notes in each staff share the same voice
+        var isChoralStyle = false;
+        if (staffKeys.length === 2 && 
+            staffCounts[staffKeys[0]].length === 2 && 
+            staffCounts[staffKeys[1]].length === 2) {
+            var upperNotes = staffCounts[staffKeys[0]];
+            var lowerNotes = staffCounts[staffKeys[1]];
+            var upperSameVoice = (upperNotes[0].voice === upperNotes[1].voice);
+            var lowerSameVoice = (lowerNotes[0].voice === lowerNotes[1].voice);
+            isChoralStyle = upperSameVoice && lowerSameVoice;
+        }
+        
         if (isKeyboardStyle) {
             return {
-                isKeyboardStyle: true,
+                style: "keyboard",
                 upperStaff: parseInt(staffKeys[0]),
                 lowerStaff: parseInt(staffKeys[1]),
                 bassVoice: { staffIdx: sorted[0].staffIdx, voice: sorted[0].voice }
             };
         }
         
-        // For non-keyboard style, track each voice individually
+        if (isChoralStyle) {
+            return {
+                style: "choral",
+                upperStaff: parseInt(staffKeys[0]),
+                lowerStaff: parseInt(staffKeys[1])
+            };
+        }
+        
+        // Open score or other arrangement: track each voice individually
         return {
-            isKeyboardStyle: false,
+            style: "open",
             B: { staffIdx: sorted[0].staffIdx, voice: sorted[0].voice },
             T: { staffIdx: sorted[1].staffIdx, voice: sorted[1].voice },
             A: { staffIdx: sorted[2].staffIdx, voice: sorted[2].voice },
@@ -58,7 +85,7 @@ MuseScore {
     }
 
     function getNotesForVoices(tickNotes, voiceLayout) {
-        if (voiceLayout.isKeyboardStyle) {
+        if (voiceLayout.style === "keyboard") {
             // Keyboard style: get all notes from upper staff, sort by pitch, assign S/A/T
             var upperNotes = tickNotes.filter(function(n) {
                 return n.staffIdx === voiceLayout.upperStaff;
@@ -70,7 +97,6 @@ MuseScore {
             });
             
             if (upperNotes.length === 3 && bassNote) {
-                // Return as object with voice labels for proper identification
                 return {
                     B: bassNote,
                     T: upperNotes[0],
@@ -79,23 +105,66 @@ MuseScore {
                 };
             }
             return null;
-        } else {
-            // Non-keyboard style: find each voice by staffIdx and voice
-            var result = {};
-            var voiceLabels = ['S', 'A', 'T', 'B'];
+        } 
+        
+        if (voiceLayout.style === "choral") {
+            // Choral style: 2 notes per staff, assign by pitch within each staff
+            var upperNotes = tickNotes.filter(function(n) {
+                return n.staffIdx === voiceLayout.upperStaff;
+            }).sort(function(a, b) { return a.pitch - b.pitch; });
             
-            voiceLabels.forEach(function(label) {
-                var voiceID = voiceLayout[label];
-                result[label] = tickNotes.find(function(n) {
-                    return n.staffIdx === voiceID.staffIdx && n.voice === voiceID.voice;
-                }) || null;
-            });
+            var lowerNotes = tickNotes.filter(function(n) {
+                return n.staffIdx === voiceLayout.lowerStaff;
+            }).sort(function(a, b) { return a.pitch - b.pitch; });
             
-            return result;
+            if (upperNotes.length === 2 && lowerNotes.length === 2) {
+                return {
+                    B: lowerNotes[0],
+                    T: lowerNotes[1],
+                    A: upperNotes[0],
+                    S: upperNotes[1]
+                };
+            }
+            return null;
         }
+        
+        // Open score: find each voice by staffIdx and voice
+        var result = {};
+        var voiceLabels = ['S', 'A', 'T', 'B'];
+        
+        voiceLabels.forEach(function(label) {
+            var voiceID = voiceLayout[label];
+            result[label] = tickNotes.find(function(n) {
+                return n.staffIdx === voiceID.staffIdx && n.voice === voiceID.voice;
+            }) || null;
+        });
+        
+        return result;
     }
 
     function hasAllFourVoices(tickNotes, voiceLayout) {
+        if (voiceLayout.style === "keyboard") {
+            var upperCount = tickNotes.filter(function(n) {
+                return n.staffIdx === voiceLayout.upperStaff;
+            }).length;
+            var bassNote = tickNotes.find(function(n) {
+                return n.staffIdx === voiceLayout.bassVoice.staffIdx && 
+                       n.voice === voiceLayout.bassVoice.voice;
+            });
+            return upperCount === 3 && bassNote;
+        }
+        
+        if (voiceLayout.style === "choral") {
+            var upperCount = tickNotes.filter(function(n) {
+                return n.staffIdx === voiceLayout.upperStaff;
+            }).length;
+            var lowerCount = tickNotes.filter(function(n) {
+                return n.staffIdx === voiceLayout.lowerStaff;
+            }).length;
+            return upperCount === 2 && lowerCount === 2;
+        }
+        
+        // Open score
         var notes = getNotesForVoices(tickNotes, voiceLayout);
         if (!notes) return false;
         return notes.S && notes.A && notes.T && notes.B;
@@ -117,31 +186,16 @@ MuseScore {
         outCursor.add(text);
     }
 
-    function calculateStatistics(analyzedTicks, tickGroups, voiceLayout) {
-        var totalIntervals = 0, perfectCount = 0;
-        
-        analyzedTicks.forEach(function(tick) {
-            var notesObj = getNotesForVoices(tickGroups[tick], voiceLayout);
-            var notes = notesObjToArray(notesObj);
-            if (notes.length >= 2) {
-                for (var x = 0; x < notes.length; x++) {
-                    for (var y = x + 1; y < notes.length; y++) {
-                        totalIntervals++;
-                        var low = (notes[x].pitch < notes[y].pitch) ? notes[x] : notes[y];
-                        var high = (notes[x].pitch < notes[y].pitch) ? notes[y] : notes[x];
-                        if (Errors.getIntervalType(low, high)) perfectCount++;
-                    }
-                }
-            }
-        });
-        return { total: totalIntervals, perfect: perfectCount };
-    }
-
     function describeVoiceAssignment(voiceLayout) {
-        if (voiceLayout.isKeyboardStyle) {
+        if (voiceLayout.style === "keyboard") {
             return "Keyboard style (SAT/B)";
         }
         
+        if (voiceLayout.style === "choral") {
+            return "Choral style (SA/TB)";
+        }
+        
+        // Open score
         var voiceLabels = ['S', 'A', 'T', 'B'];
         var staffCounts = {};
         
@@ -155,21 +209,14 @@ MuseScore {
         
         if (staffKeys.length === 1) {
             return "All voices on staff " + staffKeys[0];
-        } else if (staffKeys.length === 2) {
-            var upper = staffCounts[staffKeys[0]].join("");
-            var lower = staffCounts[staffKeys[1]].join("");
-            if (upper === "SA" && lower === "TB") {
-                return "Choral style (SA/TB)";
-            } else {
-                return upper + "/" + lower;
-            }
+        } else if (staffKeys.length === 4) {
+            return "Open score (4 staves)";
         }
+        
         return staffKeys.length + " staves";
     }
 
-    function addStatisticsFooter(analyzedTicks, tickGroups, voiceLayout, lastStaff) {
-        var stats = calculateStatistics(analyzedTicks, tickGroups, voiceLayout);
-        var perfRatio = (stats.total > 0) ? Math.round((stats.perfect / stats.total) * 100) : 0;
+    function addStatisticsFooter(voiceLayout, lastStaff) {
         var voiceDesc = describeVoiceAssignment(voiceLayout);
         
         var cursor = curScore.newCursor();
@@ -177,8 +224,7 @@ MuseScore {
         cursor.staffIdx = lastStaff; 
         
         var footer = newElement(Element.STAFF_TEXT);
-        footer.text = "--- SATB ANALYSIS ---\n" + voiceDesc + 
-                     "\nChords: " + analyzedTicks.length + " | Perfect: " + perfRatio + "%";
+        footer.text = "--- SATB ANALYSIS ---\n" + voiceDesc;
         footer.color = colorStats; 
         footer.placement = Placement.BELOW;
         cursor.add(footer);
@@ -250,7 +296,7 @@ MuseScore {
         }
 
         // Add statistics
-        addStatisticsFooter(analyzedTicks, tickGroups, voiceLayout, lastStaff);
+        addStatisticsFooter(voiceLayout, lastStaff);
         
         curScore.endCmd(); 
         quit();
