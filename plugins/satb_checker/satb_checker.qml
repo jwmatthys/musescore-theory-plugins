@@ -216,15 +216,26 @@ MuseScore {
         return staffKeys.length + " staves";
     }
 
-    function addStatisticsFooter(voiceLayout, lastStaff) {
+    function tpcToKeyName(tpc) {
+        var names = {
+            6:"Abb", 7:"Ebb", 8:"Bb", 9:"Db", 10:"Ab", 11:"Eb", 12:"Bb", 
+            13:"F", 14:"C", 15:"G", 16:"D", 17:"A", 18:"E", 19:"B", 
+            20:"F#", 21:"C#", 22:"G#", 23:"D#", 24:"A#", 25:"E#", 26:"B#", 
+            27:"Fx", 28:"Cx", 29:"Gx", 30:"Dx", 31:"Ax"
+        };
+        return names[tpc] || ("TPC:" + tpc);
+    }
+
+    function addStatisticsFooter(voiceLayout, tonicTPC, mode, lastStaff) {
         var voiceDesc = describeVoiceAssignment(voiceLayout);
+        var keyName = tpcToKeyName(tonicTPC) + " " + mode;
         
         var cursor = curScore.newCursor();
         cursor.rewind(1); 
         cursor.staffIdx = lastStaff; 
         
         var footer = newElement(Element.STAFF_TEXT);
-        footer.text = "--- SATB ANALYSIS ---\n" + voiceDesc;
+        footer.text = "--- SATB ANALYSIS ---\n" + keyName + "\n" + voiceDesc;
         footer.color = colorStats; 
         footer.placement = Placement.BELOW;
         cursor.add(footer);
@@ -259,9 +270,10 @@ MuseScore {
             return;
         }
 
-        // Determine tonic and mode
-        var tonicTPC = Harmony.determineTonic(sortedTicks, tickGroups, curScore, Element);
-        var mode = Harmony.determineMode(sortedTicks, curScore, Element);
+        // Determine tonic and mode using 3-stage approach
+        var keyResult = Harmony.determineKeyAndMode(sortedTicks, tickGroups, curScore, Element, newElement);
+        var tonicTPC = keyResult.tonic;
+        var mode = keyResult.mode;
 
         // Filter to only ticks with all 4 voices
         var analyzedTicks = sortedTicks.filter(function(tick) {
@@ -296,7 +308,7 @@ MuseScore {
         }
 
         // Add statistics
-        addStatisticsFooter(voiceLayout, lastStaff);
+        addStatisticsFooter(voiceLayout, tonicTPC, mode, lastStaff);
         
         curScore.endCmd(); 
         quit();

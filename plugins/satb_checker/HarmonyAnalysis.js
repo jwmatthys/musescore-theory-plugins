@@ -20,47 +20,6 @@ var chordMap = {
 var cadMajor = [1, 0, 4];   // Cad in major: 5, 1, 3 (major third)
 var cadMinor = [1, 0, -3];  // Cad in minor: 5, 1, b3 (minor third)
 
-function determineMode(sortedTicks, curScore, Element) {
-    // Scan roman numerals to determine mode
-    // Look for definitive minor indicators: i, iv, or lowercase tonic-function chords
-    // Look for definitive major indicators: I, IV
-    var minorCount = 0;
-    var majorCount = 0;
-    
-    sortedTicks.forEach(function(t) {
-        var cursor = curScore.newCursor(); 
-        cursor.rewindToTick(t);
-        if (cursor.segment && cursor.segment.annotations) {
-            cursor.segment.annotations.forEach(function(ann) {
-                if (ann.type === Element.HARMONY) {
-                    var rn = ann.text;
-                    // Get the primary chord (before any slash)
-                    var primary = rn.split('/')[0];
-                    
-                    // Remove inversion figures to get base RN
-                    var base = primary.replace(/[765432]/g, '');
-                    
-                    // Check for tonic/subdominant indicators
-                    if (base === "i" || base === "iv") {
-                        minorCount++;
-                    } else if (base === "I" || base === "IV") {
-                        majorCount++;
-                    }
-                    // Also check for iio (common in minor) vs ii (common in major)
-                    else if (base === "iio" || base === "ii0") {
-                        minorCount++;
-                    } else if (base === "ii") {
-                        majorCount++;
-                    }
-                }
-            });
-        }
-    });
-    
-    // Default to major if no clear indicators or tie
-    return (minorCount > majorCount) ? "minor" : "major";
-}
-
 function getChordData(rn, tonicTPC, mode) {
     if (!rn || rn === "") return { tones: [], tendTones: [null, null] };
     
@@ -142,19 +101,114 @@ function getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC, mode, 
     return { rn: rn, hData: getChordData(rn, tonicTPC, mode) };
 }
 
-function determineTonic(sortedTicks, tickGroups, curScore, Element) {
-    var tpc = 14;
-    sortedTicks.forEach(function(t) {
-        var cursor = curScore.newCursor(); 
+// Key signature to TPC mapping (for major keys)
+// Key sig value: -7 to +7 (flats negative, sharps positive)
+// Returns the TPC of the major key tonic
+function keySigToMajorTPC(keySig) {
+    // Key sig 0 = C major (TPC 14)
+    // Each sharp adds 1 to TPC, each flat subtracts 1
+    return 14 + keySig;
+}
+
+// Get the relative minor TPC from major TPC (up 3 on TPC circle)
+// C major (TPC 14) -> A minor (TPC 17)
+function majorTPCtoMinorTPC(majorTPC) {
+    return majorTPC + 3;
+}
+
+function determineKeyAndMode(sortedTicks, tickGroups, curScore, Element, newElement) {
+    var result = { tonic: 14, mode: "major" };
+    
+    // ===== STAGE 1: Read key signature =====
+    var keySig = null;
+    var cursor = curScore.newCursor();
+    cursor.rewind(0); // Go to start
+    
+    if (cursor.keySignature !== undefined) {
+        keySig = cursor.keySignature;
+    }
+    
+    var majorTPC = (keySig !== null) ? keySigToMajorTPC(keySig) : 14;
+    var minorTPC = majorTPCtoMinorTPC(majorTPC);
+    
+    // Default assumption: major key from key signature
+    result.tonic = majorTPC;
+    result.mode = "major";
+    
+    // ===== STAGE 2: Find first root position V or V7 (not secondary) =====
+    var foundV = false;
+    for (var i = 0; i < sortedTicks.length && !foundV; i++) {
+        var t = sortedTicks[i];
         cursor.rewindToTick(t);
         if (cursor.segment && cursor.segment.annotations) {
-            cursor.segment.annotations.forEach(function(ann) {
-                if (ann.type === Element.HARMONY && ann.text.match(/^V7?$/)) {
-                    var chordNotes = tickGroups[t].sort(function(a,b) { return a.pitch - b.pitch; });
-                    if (chordNotes.length > 0) tpc = chordNotes[0].tpc - 1; 
+            for (var j = 0; j < cursor.segment.annotations.length; j++) {
+                var ann = cursor.segment.annotations[j];
+                if (ann.type === Element.HARMONY) {
+                    var rn = ann.text;
+                    // Check for root position V or V7 (not secondary - no slash)
+                    if (rn.match(/^V7?$/)) {
+                        var chordNotes = tickGroups[t].sort(function(a,b) { return a.pitch - b.pitch; });
+                        if (chordNotes.length > 0) {
+                            var bassTPC = chordNotes[0].tpc;
+                            var impliedTonic = bassTPC - 1; // V is 1 fifth above tonic
+                            
+                            // Check if implied tonic matches major or minor from key sig
+                            if (impliedTonic === majorTPC) {
+                                result.tonic = majorTPC;
+                                result.mode = "major";
+                                foundV = true;
+                                break;
+                            } else if (impliedTonic === minorTPC) {
+                                result.tonic = minorTPC;
+                                result.mode = "minor";
+                                foundV = true;
+                                break;
+                            }
+                        }
+                    }
                 }
-            });
+            }
         }
-    });
-    return tpc;
+    }
+    
+    // ===== STAGE 3: Statistical analysis of roman numerals =====
+    if (!foundV) {
+        var majorScore = 0;
+        
+        sortedTicks.forEach(function(t) {
+            cursor.rewindToTick(t);
+            if (cursor.segment && cursor.segment.annotations) {
+                cursor.segment.annotations.forEach(function(ann) {
+                    if (ann.type === Element.HARMONY) {
+                        var rn = ann.text;
+                        var primary = rn.split('/')[0];
+                        var base = primary.replace(/[765432]/g, '');
+                        
+                        // Major indicators: I, ii, iii, IV, vi (+1)
+                        if (base === "I" || base === "ii" || base === "iii" || base === "IV" || base === "vi") {
+                            majorScore++;
+                        }
+                        // Minor indicators: i, iio, III, iv, VI (-1)
+                        else if (base === "i" || base === "iio" || base === "ii0" || base === "III" || base === "iv" || base === "VI") {
+                            majorScore--;
+                        }
+                    }
+                });
+            }
+        });
+        
+        if (majorScore > 0) {
+            result.tonic = majorTPC;
+            result.mode = "major";
+        } else if (majorScore < 0) {
+            result.tonic = minorTPC;
+            result.mode = "minor";
+        } else {
+            // Tie or no data - default to major from key sig
+            result.tonic = majorTPC;
+            result.mode = "major";
+        }
+    }
+    
+    return result;
 }
