@@ -6,6 +6,7 @@ MuseScore {
     version: "4.0"
     description: "Identify chords across multiple staves and voices"
     categoryCode: "Analysis"
+    thumbnailName: "thumbnail_chord.png"
     requiresScore: true
 
     // --- 1. HARVEST NOTES ACROSS ALL SELECTED STAVES ---

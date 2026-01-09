@@ -6,6 +6,7 @@ MuseScore {
     version: "1.0"
     description: "Adds pop and jazz chord analysis as Staff Text"
     categoryCode: "Analysis"
+    thumbnailName: "thumbnail_popchord.png"
     requiresScore: true
 
     // --- 1. HARVEST NOTES ---

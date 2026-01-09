@@ -6,6 +6,7 @@ MuseScore {
     version: "1.2"
     description: "Identify intervals between the highest and lowest notes across all selected staves"
     categoryCode: "Analysis"
+    thumbnailName: "thumbnail_interval.png"
     requiresScore: true
 
     /**

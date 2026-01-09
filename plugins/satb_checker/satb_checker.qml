@@ -8,6 +8,7 @@ MuseScore {
     description: "Checks SATB part-writing for range, spacing, parallels, and voice leading"
     version: "1.0"
     categoryCode: "Part-Writing"
+    thumbnailName: "thumbnail_satb.png"
     requiresScore: true
 
     readonly property string colorError: "#b30000" 
