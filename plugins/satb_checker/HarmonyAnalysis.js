@@ -119,10 +119,16 @@ function majorTPCtoMinorTPC(majorTPC) {
 function determineKeyAndMode(sortedTicks, tickGroups, curScore, Element, newElement) {
     var result = { tonic: 14, mode: "major" };
     
-    // ===== STAGE 1: Read key signature =====
+    // ===== STAGE 1: Read key signature at start of selection =====
     var keySig = null;
     var cursor = curScore.newCursor();
-    cursor.rewind(0); // Go to start
+    
+    // Go to the first tick in the selection to get the key signature there
+    if (sortedTicks.length > 0) {
+        cursor.rewindToTick(sortedTicks[0]);
+    } else {
+        cursor.rewind(0);
+    }
     
     if (cursor.keySignature !== undefined) {
         keySig = cursor.keySignature;
