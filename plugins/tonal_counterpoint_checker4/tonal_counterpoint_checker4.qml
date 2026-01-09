@@ -10,6 +10,7 @@ MuseScore {
     description: "Checks two-part species 4 counterpoint with syncopation and suspensions"
     version: "2.1"
     categoryCode: "Proofreading"
+    thumbnailName: "thumbnail_tonal4.png"
     requiresScore: true
 
     readonly property string colorError: "#b30000" 

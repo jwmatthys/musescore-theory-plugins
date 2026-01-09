@@ -8,6 +8,7 @@ MuseScore {
     title: "Tonal Counterpoint Species 1 Checker"
     description: "Checks two-part species 1 counterpoint (note-against-note, all chord tones)"
     version: "2.0"
+    thumbnailName: "thumbnail_tonal1.png"
     categoryCode: "Proofreading"
     requiresScore: true
 

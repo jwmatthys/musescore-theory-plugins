@@ -10,6 +10,7 @@ MuseScore {
     description: "Checks two-part species 3 counterpoint with passing, neighbor, double neighbor, and cambiata patterns"
     version: "2.1"
     categoryCode: "Proofreading"
+    thumbnailName: "thumbnail_tonal3.png"
     requiresScore: true
 
     readonly property string colorError: "#b30000" 
