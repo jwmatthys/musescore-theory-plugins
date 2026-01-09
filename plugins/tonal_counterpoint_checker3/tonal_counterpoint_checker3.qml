@@ -148,8 +148,9 @@ MuseScore {
         var sopID = voices[voices.length - 1];
         
         // Determine tonic, mode, and bass onsets
-        var tonicTPC = Harmony.determineTonic(sortedTicks, tickGroups, curScore, Element);
-        var mode = Harmony.determineMode(sortedTicks, curScore, Element);
+        var keyResult = Harmony.determineKeyAndMode(sortedTicks, tickGroups, curScore, Element, newElement);
+        var tonicTPC = keyResult.tonic;
+        var mode = keyResult.mode;
         var bassOnsets = Helpers.identifyBassOnsets(sortedTicks, tickGroups, bassID);
 
         // Analyze all ticks

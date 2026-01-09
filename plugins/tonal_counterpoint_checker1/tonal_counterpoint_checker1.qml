@@ -85,8 +85,9 @@ MuseScore {
         var sopID = voices[voices.length - 1];
         
         // Determine tonic and mode
-        var tonicTPC = Harmony.determineTonic(sortedTicks, tickGroups, curScore, Element);
-        var mode = Harmony.determineMode(sortedTicks, curScore, Element);
+        var keyResult = Harmony.determineKeyAndMode(sortedTicks, tickGroups, curScore, Element, newElement);
+        var tonicTPC = keyResult.tonic;
+        var mode = keyResult.mode;
 
         // Main check loop - simple tick-by-tick analysis
         for (var j = 0; j < sortedTicks.length; j++) {
