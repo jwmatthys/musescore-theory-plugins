@@ -9,7 +9,7 @@ MuseScore {
     title: "Tonal Counterpoint Species 3 Checker"
     description: "Checks two-part species 3 counterpoint with passing, neighbor, double neighbor, and cambiata patterns"
     version: "2.1"
-    categoryCode: "Proofreading"
+    categoryCode: "Counterpoint"
     thumbnailName: "thumbnail_tonal3.png"
     requiresScore: true
 

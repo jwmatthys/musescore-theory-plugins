@@ -5,7 +5,7 @@ MuseScore {
     title: "Pop and Jazz Chord Labeler"
     version: "1.0"
     description: "Adds pop and jazz chord analysis as Staff Text"
-    categoryCode: "Proofreading"
+    categoryCode: "Analysis"
     requiresScore: true
 
     // --- 1. HARVEST NOTES ---

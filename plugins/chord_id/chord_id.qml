@@ -5,7 +5,7 @@ MuseScore {
     title: "Chord Identification"
     version: "4.0"
     description: "Identify chords across multiple staves and voices"
-    categoryCode: "Proofreading"
+    categoryCode: "Analysis"
     requiresScore: true
 
     // --- 1. HARVEST NOTES ACROSS ALL SELECTED STAVES ---

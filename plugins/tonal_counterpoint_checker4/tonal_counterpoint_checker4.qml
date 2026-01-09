@@ -9,7 +9,7 @@ MuseScore {
     title: "Tonal Counterpoint Species 4 Checker"
     description: "Checks two-part species 4 counterpoint with syncopation and suspensions"
     version: "2.1"
-    categoryCode: "Proofreading"
+    categoryCode: "Counterpoint"
     thumbnailName: "thumbnail_tonal4.png"
     requiresScore: true
 

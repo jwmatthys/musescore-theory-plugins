@@ -2,10 +2,10 @@ import QtQuick
 import MuseScore
 
 MuseScore {
-    title: "Counterpoint Checker: 1st Species"
+    title: "Counterpoint Checker: Modal 1st Species"
     version: "3.6"
     description: "Strict 1st Species rules (16th Century Counterpoint)"
-    categoryCode: "Proofreading"
+    categoryCode: "Counterpoint"
     requiresScore: true
 
     // --- CONFIGURATION ---

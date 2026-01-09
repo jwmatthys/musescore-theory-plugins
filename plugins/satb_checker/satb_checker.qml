@@ -7,7 +7,7 @@ MuseScore {
     title: "SATB Part-Writing Checker"
     description: "Checks SATB part-writing for range, spacing, parallels, and voice leading"
     version: "1.0"
-    categoryCode: "Proofreading"
+    categoryCode: "Part-Writing"
     requiresScore: true
 
     readonly property string colorError: "#b30000" 

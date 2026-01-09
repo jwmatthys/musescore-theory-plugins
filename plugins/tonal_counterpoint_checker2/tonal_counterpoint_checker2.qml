@@ -10,7 +10,7 @@ MuseScore {
     description: "Checks two-part species 2 counterpoint (only passing tones allowed)"
     version: "1.0"
     thumbnailName: "thumbnail_tonal2.png"
-    categoryCode: "Proofreading"
+    categoryCode: "Counterpoint"
     requiresScore: true
 
     readonly property string colorError: "#b30000" 
