@@ -62,62 +62,154 @@ MuseScore {
 
         var candidates = [];
 
+        // Try each note as potential root
         for (var r = 0; r < tpcs.length; r++) {
             var root = tpcs[r];
             var deltas = tpcs.map(function(t) { return t - root; });
             var has = function(d) { return deltas.indexOf(d) !== -1; };
+            
+            // Count how many notes are "explained" by each chord type
+            var checkFit = function(validDeltas) {
+                var explained = 0;
+                for (var i = 0; i < deltas.length; i++) {
+                    if (validDeltas.indexOf(deltas[i]) !== -1) explained++;
+                }
+                return explained;
+            };
 
             var quality = null;
             var ext = "";
             var weight = 0;
 
-            // Priority 1: Jazz Shells
-            if (has(4) && has(-2)) { // Dom7
-                quality = "7"; weight = 3;
-                if (has(3)) { quality = "13"; weight++; }
-                else if (has(2)) { quality = "9"; weight++; }
-                if (has(6)) { ext = "♯11"; weight++; }
-                if (has(-5)) { ext = "♭9"; weight++; }
-                if (has(9)) { ext = "♯9"; weight++; }
+            // === SEVENTH CHORDS ===
+            // Dom7: root, M3, P5, m7 (and extensions)
+            if (has(4) && has(-2)) {
+                var dom7Valid = [0, 4, 1, -2, 2, 3, 6, -5, 9]; // root, 3, 5, 7, 9, 13, #11, b9, #9
+                var fit = checkFit(dom7Valid);
+                if (fit === tpcs.length) {
+                    quality = "7"; weight = 4;
+                    if (has(3)) { quality = "13"; weight++; }
+                    else if (has(2)) { quality = "9"; weight++; }
+                    if (has(6)) ext += "♯11";
+                    if (has(-5)) ext += "♭9";
+                    if (has(9)) ext += "♯9";
+                }
             }
-            else if (has(4) && has(5)) { // Maj7
-                quality = "maj7"; weight = 3;
-                if (has(3)) { quality = "maj13"; weight++; }
-                else if (has(2)) { quality = "maj9"; weight++; }
-                if (has(6)) { ext = "♯11"; weight++; }
+            
+            // Maj7: root, M3, P5, M7
+            if (quality === null && has(4) && has(5)) {
+                var maj7Valid = [0, 4, 1, 5, 2, 3, 6]; // root, 3, 5, 7, 9, 13, #11
+                var fit = checkFit(maj7Valid);
+                if (fit === tpcs.length) {
+                    quality = "maj7"; weight = 4;
+                    if (has(3)) { quality = "maj13"; weight++; }
+                    else if (has(2)) { quality = "maj9"; weight++; }
+                    if (has(6)) ext += "♯11";
+                }
             }
-            else if (has(-3) && has(-2)) { // m7
-                quality = "m7"; weight = 3;
-                if (has(-6)) { quality = "m7♭5"; weight++; }
-                else if (has(3)) { quality = "m11"; weight++; }
-                else if (has(2)) { quality = "m9"; weight++; }
+            
+            // m7: root, m3, P5, m7
+            if (quality === null && has(-3) && has(-2)) {
+                var m7Valid = [0, -3, 1, -2, 2, 3, -1]; // root, b3, 5, b7, 9, 11, 4
+                var fit = checkFit(m7Valid);
+                if (fit === tpcs.length) {
+                    quality = "m7"; weight = 4;
+                    if (has(-6)) { quality = "m7♭5"; weight++; }
+                    else if (has(3)) { quality = "m11"; weight++; }
+                    else if (has(2)) { quality = "m9"; weight++; }
+                }
             }
-            else if (has(-3) && has(-9)) { // dim7
-                quality = "dim7"; weight = 4;
+            
+            // dim7: root, m3, d5, d7
+            if (quality === null && has(-3) && has(-6) && has(-9)) {
+                quality = "dim7"; weight = 5;
+            }
+            
+            // m7b5 (half-dim): root, m3, d5, m7
+            if (quality === null && has(-3) && has(-6) && has(-2)) {
+                var hdValid = [0, -3, -6, -2];
+                var fit = checkFit(hdValid);
+                if (fit === tpcs.length) {
+                    quality = "m7♭5"; weight = 4;
+                }
             }
 
-            // Priority 2: Triads
+            // === ADD CHORDS (triad + 2nd, no 7th) ===
             if (quality === null) {
-                if (has(4) && (has(1) || deltas.length === 2)) { quality = ""; weight = 2; }
-                else if (has(-3) && (has(1) || deltas.length === 2)) { quality = "m"; weight = 2; }
-                else if (has(-3) && has(-6)) { quality = "dim"; weight = 2; }
-                else if (has(4) && has(8)) { quality = "aug"; weight = 2; }
+                if (has(4) && has(1) && has(2) && !has(5) && !has(-2)) { 
+                    var addValid = [0, 4, 1, 2];
+                    if (checkFit(addValid) === tpcs.length) {
+                        quality = "add2"; weight = 3;
+                    }
+                }
+                else if (has(-3) && has(1) && has(2) && !has(-2)) {
+                    var maddValid = [0, -3, 1, 2];
+                    if (checkFit(maddValid) === tpcs.length) {
+                        quality = "madd2"; weight = 3;
+                    }
+                }
             }
 
-            // Priority 3: Sus
+            // === TRIADS ===
             if (quality === null) {
-                if (has(-1)) { quality = "sus4"; weight = 1; }
-                else if (has(-2)) { quality = "sus2"; weight = 1; }
+                // Major triad
+                if (has(4) && has(1)) {
+                    var majValid = [0, 4, 1];
+                    if (checkFit(majValid) === tpcs.length) {
+                        quality = ""; weight = 2;
+                    }
+                }
+                // Minor triad
+                if (quality === null && has(-3) && has(1)) {
+                    var minValid = [0, -3, 1];
+                    if (checkFit(minValid) === tpcs.length) {
+                        quality = "m"; weight = 2;
+                    }
+                }
+                // Diminished triad
+                if (quality === null && has(-3) && has(-6)) {
+                    var dimValid = [0, -3, -6];
+                    if (checkFit(dimValid) === tpcs.length) {
+                        quality = "dim"; weight = 2;
+                    }
+                }
+                // Augmented triad
+                if (quality === null && has(4) && has(8)) {
+                    var augValid = [0, 4, 8];
+                    if (checkFit(augValid) === tpcs.length) {
+                        quality = "aug"; weight = 2;
+                    }
+                }
+            }
+
+            // === SUS CHORDS ===
+            if (quality === null) {
+                if (has(-1) && has(1) && !has(4) && !has(-3)) {
+                    var sus4Valid = [0, -1, 1];
+                    if (checkFit(sus4Valid) === tpcs.length) {
+                        quality = "sus4"; weight = 1;
+                    }
+                }
+                else if (has(2) && has(1) && !has(4) && !has(-3)) {
+                    var sus2Valid = [0, 2, 1];
+                    if (checkFit(sus2Valid) === tpcs.length) {
+                        quality = "sus2"; weight = 1;
+                    }
+                }
             }
 
             if (quality !== null) {
                 var label = getProperNoteName(root) + quality + ext;
-                if (root !== bassTPC) label += "/" + getProperNoteName(bassTPC);
+                var isRootInChord = (tpcs.indexOf(root) !== -1);
+                var isRootBass = (root === bassTPC);
+                
+                if (!isRootBass) label += "/" + getProperNoteName(bassTPC);
+                
                 candidates.push({
                     label: label, 
-                    score: weight + 1, 
+                    score: weight + (isRootBass ? 1 : 0), 
                     isSus: (quality.indexOf("sus") !== -1),
-                    isRootBass: (root === bassTPC)
+                    isRootBass: isRootBass
                 });
             }
         }
