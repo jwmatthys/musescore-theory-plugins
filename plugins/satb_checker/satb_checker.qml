@@ -14,6 +14,12 @@ MuseScore {
     readonly property string colorError: "#b30000" 
     readonly property string colorStats: "#004a99"
 
+    function isRomanNumeral(harmony) {
+        // Roman numerals have harmonyType !== 0
+        // Chord symbols have harmonyType === 0 or undefined
+        return (harmony.harmonyType !== undefined && harmony.harmonyType !== 0);
+    }
+
     function identifyVoiceLayout(firstChordNotes) {
         // Sort notes by pitch, low to high
         var sorted = firstChordNotes.slice().sort(function(a, b) { 
@@ -293,13 +299,15 @@ MuseScore {
                 nextNotesObj = getNotesForVoices(tickGroups[analyzedTicks[j + 1]], voiceLayout);
             }
 
-            // Get roman numeral at this tick
+            // Get roman numeral at this tick (filter for Roman numerals only)
             var rn = "";
             var cursor = curScore.newCursor(); 
             cursor.rewindToTick(tick);
             if (cursor.segment) {
                 cursor.segment.annotations.forEach(function(ann) {
-                    if (ann.type === Element.HARMONY) rn = ann.text;
+                    if (ann.type === Element.HARMONY && isRomanNumeral(ann)) {
+                        rn = ann.text;
+                    }
                 });
             }
 
