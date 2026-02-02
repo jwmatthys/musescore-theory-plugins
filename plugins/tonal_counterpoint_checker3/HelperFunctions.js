@@ -47,6 +47,12 @@ function isLeap(tpcDist) {
     return Math.abs(tpcDist) >= 3;
 }
 
+function isRomanNumeral(harmony) {
+    // Roman numerals have harmonyType !== 0
+    // Chord symbols have harmonyType === 0 or undefined
+    return (harmony.harmonyType !== undefined && harmony.harmonyType !== 0);
+}
+
 function identifyBassOnsets(sortedTicks, tickGroups, bassID, curScore, Element) {
     var bassOnsets = [];
     
@@ -58,21 +64,21 @@ function identifyBassOnsets(sortedTicks, tickGroups, bassID, curScore, Element) 
             return n.staffIdx === bassID.staffIdx && n.voice === bassID.voice; 
         });
         
-        // Check if there's a harmony annotation at this tick
+        // Check if there's a Roman numeral harmony annotation at this tick
         var hasHarmony = false;
         if (curScore && Element) {
             var cursor = curScore.newCursor();
             cursor.rewindToTick(tick);
             if (cursor.segment && cursor.segment.annotations) {
                 cursor.segment.annotations.forEach(function(ann) {
-                    if (ann.type === Element.HARMONY) {
+                    if (ann.type === Element.HARMONY && isRomanNumeral(ann)) {
                         hasHarmony = true;
                     }
                 });
             }
         }
         
-        // Create bass onset if there's either a bass note or harmony
+        // Create bass onset if there's either a bass note or Roman numeral harmony
         if (hasBassNote || hasHarmony) {
             bassOnsets.push(tick);
         }

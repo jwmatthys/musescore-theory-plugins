@@ -20,6 +20,12 @@ var chordMap = {
 var cadMajor = [1, 0, 4];   // Cad in major: 5, 1, 3 (major third)
 var cadMinor = [1, 0, -3];  // Cad in minor: 5, 1, b3 (minor third)
 
+function isRomanNumeral(harmony) {
+    // Roman numerals have harmonyType !== 0
+    // Chord symbols have harmonyType === 0 or undefined
+    return (harmony.harmonyType !== undefined && harmony.harmonyType !== 0);
+}
+
 function getChordData(rn, tonicTPC, mode) {
     if (!rn || rn === "") return { tones: [], tendTones: [null, null] };
     
@@ -95,7 +101,9 @@ function getCurrentHarmonyContext(tick, bassOnsets, tickGroups, tonicTPC, mode, 
     var rn = "";
     if (cursor.segment) {
         cursor.segment.annotations.forEach(function(ann) {
-            if (ann.type === Element.HARMONY) rn = ann.text;
+            if (ann.type === Element.HARMONY && isRomanNumeral(ann)) {
+                rn = ann.text;
+            }
         });
     }
     return { rn: rn, hData: getChordData(rn, tonicTPC, mode) };
@@ -149,7 +157,7 @@ function determineKeyAndMode(sortedTicks, tickGroups, curScore, Element, newElem
         if (cursor.segment && cursor.segment.annotations) {
             for (var j = 0; j < cursor.segment.annotations.length; j++) {
                 var ann = cursor.segment.annotations[j];
-                if (ann.type === Element.HARMONY) {
+                if (ann.type === Element.HARMONY && isRomanNumeral(ann)) {
                     var rn = ann.text;
                     // Check for root position V or V7 (not secondary - no slash)
                     if (rn.match(/^V7?$/)) {
@@ -185,7 +193,7 @@ function determineKeyAndMode(sortedTicks, tickGroups, curScore, Element, newElem
             cursor.rewindToTick(t);
             if (cursor.segment && cursor.segment.annotations) {
                 cursor.segment.annotations.forEach(function(ann) {
-                    if (ann.type === Element.HARMONY) {
+                    if (ann.type === Element.HARMONY && isRomanNumeral(ann)) {
                         var rn = ann.text;
                         var primary = rn.split('/')[0];
                         var base = primary.replace(/[765432]/g, '');
