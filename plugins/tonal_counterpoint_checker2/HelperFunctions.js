@@ -47,19 +47,34 @@ function isLeap(tpcDist) {
     return Math.abs(tpcDist) >= 3;
 }
 
-function identifyBassOnsets(sortedTicks, tickGroups, bassID) {
+function identifyBassOnsets(sortedTicks, tickGroups, bassID, curScore, Element) {
     var bassOnsets = [];
-    var lastBassNote = null;
     
     for (var i = 0; i < sortedTicks.length; i++) {
-        var bassNote = tickGroups[sortedTicks[i]].find(function(n) { 
+        var tick = sortedTicks[i];
+        
+        // Check if there's a bass note at this tick
+        var hasBassNote = tickGroups[tick].some(function(n) { 
             return n.staffIdx === bassID.staffIdx && n.voice === bassID.voice; 
         });
-        if (bassNote && (!lastBassNote || 
-            bassNote.pitch !== lastBassNote.pitch || 
-            bassNote.tpc !== lastBassNote.tpc)) {
-            bassOnsets.push(sortedTicks[i]);
-            lastBassNote = bassNote;
+        
+        // Check if there's a harmony annotation at this tick
+        var hasHarmony = false;
+        if (curScore && Element) {
+            var cursor = curScore.newCursor();
+            cursor.rewindToTick(tick);
+            if (cursor.segment && cursor.segment.annotations) {
+                cursor.segment.annotations.forEach(function(ann) {
+                    if (ann.type === Element.HARMONY) {
+                        hasHarmony = true;
+                    }
+                });
+            }
+        }
+        
+        // Create bass onset if there's either a bass note or harmony
+        if (hasBassNote || hasHarmony) {
+            bassOnsets.push(tick);
         }
     }
     return bassOnsets;

@@ -63,10 +63,24 @@ function isPassingOrNeighborTone(noteAna, hData) {
     
     var stepToPrev = Math.abs(noteAna.note.pitch - noteAna.prevNote.pitch);
     var stepToNext = Math.abs(noteAna.note.pitch - noteAna.nextNote.pitch);
-    if (stepToPrev > 2 || stepToNext > 2) return false;
     
     var dirToPrev = noteAna.note.pitch - noteAna.prevNote.pitch;
     var dirToNext = noteAna.nextNote.pitch - noteAna.note.pitch;
+    
+    // Check for melodic minor exception: sol-le-ti or ti-le-sol
+    // This creates an aug2 (3 semitones) but is acceptable as a passing tone
+    var sameDirection = dirToPrev * dirToNext > 0;
+    if ((stepToPrev === 1 && stepToNext === 3 && sameDirection) ||
+        (stepToPrev === 3 && stepToNext === 1 && sameDirection)) {
+        // Verify it's ascending (sol-le-ti) or descending (ti-le-sol)
+        // by checking the overall motion is 4 semitones (aug2 + step)
+        var totalMotion = Math.abs(noteAna.nextNote.pitch - noteAna.prevNote.pitch);
+        if (totalMotion === 4) {
+            return true; // Valid melodic minor passing tone
+        }
+    }
+    
+    if (stepToPrev > 2 || stepToNext > 2) return false;
     
     // Passing tone (same direction) or neighbor tone (opposite direction, returns home)
     return dirToPrev * dirToNext > 0 || 

@@ -11,26 +11,33 @@ function isStep(tpcDist) {
 }
 
 function isPassingTone(noteAna, hData) {
-    // A passing tone must:
-    // 1. Not be a chord tone
-    // 2. Be approached and left by step
-    // 3. Move in the SAME direction (not a neighbor tone)
-    
     if (!noteAna.prevNote || !noteAna.nextNote) return false;
     if (hData.tones.indexOf(noteAna.note.tpc) !== -1) return true; // It's a chord tone
     
     var stepToPrev = Math.abs(noteAna.note.pitch - noteAna.prevNote.pitch);
     var stepToNext = Math.abs(noteAna.note.pitch - noteAna.nextNote.pitch);
     
+    var dirToPrev = noteAna.note.pitch - noteAna.prevNote.pitch;
+    var dirToNext = noteAna.nextNote.pitch - noteAna.note.pitch;
+    var sameDirection = dirToPrev * dirToNext > 0;
+    
+    // Check for melodic minor exception: sol-le-ti or ti-le-sol
+    // This creates an aug2 (3 semitones) but is acceptable
+    if ((stepToPrev === 1 && stepToNext === 3 && sameDirection) ||
+        (stepToPrev === 3 && stepToNext === 1 && sameDirection)) {
+        // Verify it's ascending (sol-le-ti) or descending (ti-le-sol)
+        // by checking the overall motion is 4 semitones (aug2 + step)
+        var totalMotion = Math.abs(noteAna.nextNote.pitch - noteAna.prevNote.pitch);
+        if (totalMotion === 4) {
+            return true; // Valid melodic minor passing tone
+        }
+    }
+    
     // Must be approached and left by step (max 2 semitones)
     if (stepToPrev > 2 || stepToNext > 2) return false;
     
-    var dirToPrev = noteAna.note.pitch - noteAna.prevNote.pitch;
-    var dirToNext = noteAna.nextNote.pitch - noteAna.note.pitch;
-    
     // Passing tone: same direction (both ascending or both descending)
-    // Neighbor tone would be opposite direction - NOT allowed in species 2
-    return dirToPrev * dirToNext > 0;
+    return sameDirection;
 }
 
 function analyzeNoteAtTick(note, tickIdx, analysis, bassID, sopID) {

@@ -77,6 +77,27 @@ function checkInvalidNCT(noteAna, ana) {
     if (noteAna.isBass || !ana.isBassOnset || ana.rn === "") return [];
     if (noteAna.isChordTone) return [];
     
+    // FIRST: Check for awkward augmented 2nd in minor (sol-le-ti or ti-le-sol)
+    if (noteAna.prevNote && noteAna.nextNote) {
+        var prevTPC = noteAna.prevNote.tpc;
+        var currTPC = noteAna.note.tpc;
+        var nextTPC = noteAna.nextNote.tpc;
+        
+        var tonicTPC = ana.hData.tones[0];
+        if (tonicTPC) {
+            var prevOffset = prevTPC - tonicTPC;
+            var currOffset = currTPC - tonicTPC;
+            var nextOffset = nextTPC - tonicTPC;
+            
+            // Check for sol-le-ti (1,-4,5) or ti-le-sol (5,-4,1)
+            if ((prevOffset === 1 && currOffset === -4 && nextOffset === 5) ||
+                (prevOffset === 5 && currOffset === -4 && nextOffset === 1)) {
+                noteAna.note.color = colorError;
+                return ["Awkward aug2\n(use raised 6th)"];
+            }
+        }
+    }
+    
     noteAna.note.color = colorError;
     return ["Invalid\nNCT"];
 }
@@ -91,6 +112,37 @@ function checkNonChordTone(noteAna, ana) {
         return ["Invalid\nNCT"];
     } else if (ana.isPartOfPattern) {
         noteAna.note.color = colorPattern;
+    }
+    
+    // Check for awkward augmented 2nd in minor (sol-le-ti or ti-le-sol)
+    if (noteAna.prevNote && noteAna.nextNote) {
+        var stepToPrev = Math.abs(noteAna.note.pitch - noteAna.prevNote.pitch);
+        var stepToNext = Math.abs(noteAna.note.pitch - noteAna.nextNote.pitch);
+        var dirToPrev = noteAna.note.pitch - noteAna.prevNote.pitch;
+        var dirToNext = noteAna.nextNote.pitch - noteAna.note.pitch;
+        var sameDirection = dirToPrev * dirToNext > 0;
+        
+        if (sameDirection && 
+            ((stepToPrev === 1 && stepToNext === 3) || 
+             (stepToPrev === 3 && stepToNext === 1))) {
+            var totalMotion = Math.abs(noteAna.nextNote.pitch - noteAna.prevNote.pitch);
+            if (totalMotion === 4) {
+                noteAna.note.color = colorError;
+                return ["Awkward aug2\n(use raised 6th)"];
+            }
+        }
+    }
+    
+    // Additional check: Leading tone must be raised over V or viio in minor
+    if (ana.rn.match(/^(V|viio|vii0)/i)) {
+        var leadingToneTPC = ana.hData.tendTones[0];
+        if (leadingToneTPC !== null) {
+            var loweredLeadingToneTPC = leadingToneTPC - 7;
+            if (noteAna.note.tpc === loweredLeadingToneTPC) {
+                noteAna.note.color = colorError;
+                return ["Leading tone must\nbe raised"];
+            }
+        }
     }
     
     return [];
@@ -216,6 +268,17 @@ function checkTickErrors(ana, analysis, voices, bassID, sopID, isFirst, isLast) 
         errors = errors.concat(checkRepeatedNote(noteAna));
         errors = errors.concat(checkTendencyResolution(noteAna, ana, nextTickAnalysis));
         errors = errors.concat(checkNonChordTone(noteAna, ana));
+        
+        // Check melodic intervals to NEXT consecutive note (not bass onset)
+        if (noteAna.nextNote) {
+            var tpcDist = noteAna.nextNote.tpc - noteAna.note.tpc;
+            if (Math.abs(tpcDist) >= 6) {
+                var qual = (tpcDist >= 6) ? "Aug." : "Dim.";
+                noteAna.note.color = colorError;
+                noteAna.nextNote.color = colorError;
+                errors.push("Melodic " + qual);
+            }
+        }
     });
     
     for (var x = 0; x < ana.noteAnalysis.length; x++) {
@@ -223,10 +286,7 @@ function checkTickErrors(ana, analysis, voices, bassID, sopID, isFirst, isLast) 
             var noteAna1 = ana.noteAnalysis[x];
             var noteAna2 = ana.noteAnalysis[y];
             
-            var mel1 = checkMelodicInterval(noteAna1);
-            var mel2 = checkMelodicInterval(noteAna2);
-            if (mel1) errors.push("Melodic " + mel1);
-            if (mel2) errors.push("Melodic " + mel2);
+            // Removed melodic interval checks from here
             
             var parallel = checkParallelPerfects(noteAna1, noteAna2);
             if (parallel) errors.push(parallel);
