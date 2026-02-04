@@ -58,8 +58,9 @@ function checkRepeatedNote(noteAna) {
 }
 
 function checkTendencyResolution(noteAna) {
-    if (!noteAna.nextBassOnsetNote) return [];
-    var dist = noteAna.nextBassOnsetNote.pitch - noteAna.note.pitch;
+    // Check tendency resolution on consecutive notes, not consecutive downbeats
+    if (!noteAna.nextNote) return [];
+    var dist = noteAna.nextNote.pitch - noteAna.note.pitch;
     
     if (noteAna.isTendency0 && (dist < 1 || dist > 2)) {
         noteAna.note.color = colorError;
@@ -135,12 +136,13 @@ function checkNonBassOnsetNote(noteAna, ana) {
 }
 
 function checkMelodicInterval(noteAna) {
-    if (!noteAna.nextBassOnsetNote) return null;
-    var tpcDist = noteAna.nextBassOnsetNote.tpc - noteAna.note.tpc;
+    // Check melodic intervals on consecutive notes, not consecutive downbeats
+    if (!noteAna.nextNote) return null;
+    var tpcDist = noteAna.nextNote.tpc - noteAna.note.tpc;
     if (Math.abs(tpcDist) >= 6) {
         var qual = (tpcDist >= 6) ? "Aug." : "Dim.";
         noteAna.note.color = colorError;
-        noteAna.nextBassOnsetNote.color = colorError;
+        noteAna.nextNote.color = colorError;
         return qual;
     }
     return null;
@@ -272,9 +274,13 @@ function checkTickErrors(ana, analysis, voices, bassID, sopID, isFirst, isLast, 
         errors = errors.concat(checkNonBassOnsetNote(noteAna, ana));
         errors = errors.concat(checkRepeatedNote(noteAna));
         errors = errors.concat(checkTendencyResolution(noteAna));
+        
+        // Check melodic intervals on consecutive notes
+        var mel = checkMelodicInterval(noteAna);
+        if (mel) errors.push("Melodic " + mel);
     });
     
-    // Voice leading checks between note pairs
+    // Voice leading checks between note pairs (from bass onset to next bass onset)
     for (var x = 0; x < ana.noteAnalysis.length; x++) {
         for (var y = x + 1; y < ana.noteAnalysis.length; y++) {
             var noteAna1 = ana.noteAnalysis[x];
@@ -282,11 +288,6 @@ function checkTickErrors(ana, analysis, voices, bassID, sopID, isFirst, isLast, 
             
             // Check from bass onset to next bass onset
             if (noteAna1.nextBassOnsetNote && noteAna2.nextBassOnsetNote) {
-                var mel1 = checkMelodicInterval(noteAna1);
-                var mel2 = checkMelodicInterval(noteAna2);
-                if (mel1) errors.push("Melodic " + mel1);
-                if (mel2) errors.push("Melodic " + mel2);
-                
                 var parallel = checkParallelPerfects(noteAna1, noteAna2);
                 if (parallel) errors.push(parallel);
                 
